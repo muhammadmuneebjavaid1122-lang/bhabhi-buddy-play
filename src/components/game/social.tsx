@@ -54,7 +54,7 @@ export interface Reaction {
   player: number;
   emoji: string;
   kind: StickerKind;
-  target?: number;
+  target?: number | undefined;
 }
 export interface ChatMsg { id: number; player: number; text: string; time: number }
 
@@ -222,7 +222,7 @@ export function ReactionLayer({ reactions }: { reactions: Reaction[] }) {
   );
 }
 
-export function SpeechBubble({ msg, position }: { msg?: ChatMsg; position: "bottom" | "left" | "top" | "right" }) {
+export function SpeechBubble({ msg, position }: { msg?: ChatMsg | undefined; position: "bottom" | "left" | "top" | "right" }) {
   if (!msg) return null;
   const place = {
     bottom: "bottom-full left-1/2 -translate-x-1/2 mb-2",
