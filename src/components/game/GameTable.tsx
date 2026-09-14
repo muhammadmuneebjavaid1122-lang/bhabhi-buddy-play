@@ -1,10 +1,11 @@
 import { useEffect, useReducer, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { legalCards, newGame, reducer, type GameState } from "@/lib/bhabhi/engine";
+import { isLegal, legalCards, newGame, reducer, type GameState } from "@/lib/bhabhi/engine";
 import { chooseBotCard } from "@/lib/bhabhi/bot";
 import { sfx } from "@/lib/bhabhi/sound";
 import { cardLabel } from "@/lib/bhabhi/cards";
 import { PlayingCard } from "./PlayingCard";
+import { ChatPanel, ReactionLayer, SpeechBubble, StickerDrawer, useSocial, type ChatMsg } from "./social";
 
 type Speed = "slow" | "normal" | "fast";
 const SPEED_MS: Record<Speed, number> = { slow: 1100, normal: 650, fast: 220 };
@@ -19,30 +20,44 @@ export function GameTable() {
   const [speed, setSpeed] = useState<Speed>("normal");
   const [banner, setBanner] = useState<{ text: string; tone: "thulla" | "good" | "neutral" } | null>(null);
   const lastSeq = useRef(0);
+  const stateRef = useRef(state);
+  stateRef.current = state;
+  const { reactions, chat, bubbles, humanSay, humanReact } = useSocial(state, sound);
 
   const delay = autoPlay ? Math.min(SPEED_MS[speed], 300) : SPEED_MS[speed];
   const human = state.players[0]!;
   const playable = new Set(legalCards(state, 0).map((c) => c.id));
   const humanTurn = state.phase === "playing" && state.turn === 0 && !autoPlay;
 
-  // Bot / auto turns and trick resolution timers
+  // Bot / auto turns and trick resolution timers.
+  // Keyed on the engine's event counter + turn so every state transition
+  // schedules exactly one fresh decision from the *live* hand.
   useEffect(() => {
     if (state.phase === "over") return;
-    let t: ReturnType<typeof setTimeout>;
+    const timers: ReturnType<typeof setTimeout>[] = [];
     if (state.phase === "resolving") {
       const isThulla = state.trick.some((p) => p.card.suit !== state.leadSuit) && !state.firstTrick;
-      t = setTimeout(() => dispatch({ type: "RESOLVE_TRICK" }), delay * (isThulla ? 2.2 : 1.4));
+      timers.push(setTimeout(() => dispatch({ type: "RESOLVE_TRICK" }), delay * (isThulla ? 2.2 : 1.4)));
     } else {
       const p = state.players[state.turn]!;
       if (!p.isHuman || autoPlay) {
-        t = setTimeout(() => {
-          const card = chooseBotCard(state, state.turn);
-          if (card) dispatch({ type: "PLAY_CARD", player: state.turn, cardId: card.id });
-        }, delay);
+        const seatIdx = state.turn;
+        const seq = state.eventSeq;
+        const act = (fallback: boolean) => {
+          const live = stateRef.current;
+          // Stale timer guard: only act if the game hasn't moved on.
+          if (live.eventSeq !== seq || live.phase !== "playing" || live.turn !== seatIdx) return;
+          let card = fallback ? null : chooseBotCard(live, seatIdx);
+          if (!card || !isLegal(live, seatIdx, card.id)) card = legalCards(live, seatIdx)[0] ?? null;
+          if (card) dispatch({ type: "PLAY_CARD", player: seatIdx, cardId: card.id });
+        };
+        timers.push(setTimeout(() => act(false), delay));
+        // Watchdog: if the move somehow didn't register, force a legal play.
+        timers.push(setTimeout(() => act(true), delay * 3 + 500));
       }
     }
-    return () => clearTimeout(t);
-  }, [state, autoPlay, delay]);
+    return () => timers.forEach(clearTimeout);
+  }, [state.eventSeq, state.phase, state.turn, autoPlay, delay]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Sound + banner feedback
   useEffect(() => {
