@@ -257,7 +257,7 @@ export function StickerDrawer({ onPick, disabled }: { onPick: (s: Sticker) => vo
         😂
       </button>
       {open && (
-        <div className="absolute bottom-full left-0 z-50 mb-2 grid grid-cols-5 gap-1 rounded-2xl border border-gold/30 bg-card p-2 shadow-2xl animate-in fade-in slide-in-from-bottom-2 duration-150">
+        <div className="absolute bottom-full right-0 z-50 mb-2 grid w-60 grid-cols-5 gap-1 rounded-2xl border border-gold/30 bg-card p-2 shadow-2xl animate-in fade-in slide-in-from-bottom-2 duration-150">
           {STICKERS.map((s) => (
             <button
               key={s.emoji}
