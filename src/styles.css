@@ -165,3 +165,33 @@
     color: var(--color-foreground);
   }
 }
+
+@keyframes float-up {
+  0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+  15% { transform: translate(-50%, -60%) scale(1.25); opacity: 1; }
+  100% { transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% - 240px)) scale(1) rotate(12deg); opacity: 0; }
+}
+@keyframes sticker-pop {
+  0% { transform: translate(-50%, -100%) scale(0); opacity: 0; }
+  20% { transform: translate(-50%, -100%) scale(1.4) rotate(-8deg); opacity: 1; }
+  35% { transform: translate(-50%, -100%) scale(1) rotate(6deg); }
+  50% { transform: translate(-50%, -100%) scale(1.1) rotate(0deg); }
+  80% { opacity: 1; }
+  100% { transform: translate(-50%, -130%) scale(0.8); opacity: 0; }
+}
+@keyframes toss {
+  0% { left: var(--fx); top: var(--fy); transform: translate(-50%, -50%) scale(0.8) rotate(0deg); opacity: 1; }
+  65% { left: var(--tx); top: var(--ty); transform: translate(-50%, -50%) scale(1.15) rotate(720deg); opacity: 1; }
+  75% { transform: translate(-50%, -50%) scale(1.7, 0.5) rotate(720deg); }
+  100% { left: var(--tx); top: var(--ty); transform: translate(-50%, -50%) scale(2, 0.35) rotate(720deg); opacity: 0; }
+}
+
+@utility animate-float-up {
+  animation: float-up 2.4s ease-out forwards;
+}
+@utility animate-sticker-pop {
+  animation: sticker-pop 2.1s ease-out forwards;
+}
+@utility animate-toss {
+  animation: toss 1.6s cubic-bezier(0.3, 0.7, 0.4, 1) forwards;
+}

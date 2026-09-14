@@ -49,4 +49,15 @@ export const sfx = {
   lose() {
     [392, 349, 311, 262].forEach((f, i) => tone(f, i * 0.2, 0.4, "sawtooth", 0.08));
   },
+  pop() {
+    tone(900, 0, 0.08, "sine", 0.08);
+    tone(1300, 0.05, 0.1, "sine", 0.06);
+  },
+  toss() {
+    tone(300, 0, 0.25, "sine", 0.06);
+    tone(90, 0.55, 0.15, "square", 0.08);
+  },
+  chat() {
+    tone(1100, 0, 0.05, "triangle", 0.05);
+  },
 };

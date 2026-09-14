@@ -1,10 +1,11 @@
 import { useEffect, useReducer, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { legalCards, newGame, reducer, type GameState } from "@/lib/bhabhi/engine";
+import { isLegal, legalCards, newGame, reducer, type GameState } from "@/lib/bhabhi/engine";
 import { chooseBotCard } from "@/lib/bhabhi/bot";
 import { sfx } from "@/lib/bhabhi/sound";
 import { cardLabel } from "@/lib/bhabhi/cards";
 import { PlayingCard } from "./PlayingCard";
+import { ChatPanel, ReactionLayer, SpeechBubble, StickerDrawer, useSocial, type ChatMsg } from "./social";
 
 type Speed = "slow" | "normal" | "fast";
 const SPEED_MS: Record<Speed, number> = { slow: 1100, normal: 650, fast: 220 };
@@ -19,30 +20,44 @@ export function GameTable() {
   const [speed, setSpeed] = useState<Speed>("normal");
   const [banner, setBanner] = useState<{ text: string; tone: "thulla" | "good" | "neutral" } | null>(null);
   const lastSeq = useRef(0);
+  const stateRef = useRef(state);
+  stateRef.current = state;
+  const { reactions, chat, bubbles, humanSay, humanReact } = useSocial(state, sound);
 
   const delay = autoPlay ? Math.min(SPEED_MS[speed], 300) : SPEED_MS[speed];
   const human = state.players[0]!;
   const playable = new Set(legalCards(state, 0).map((c) => c.id));
   const humanTurn = state.phase === "playing" && state.turn === 0 && !autoPlay;
 
-  // Bot / auto turns and trick resolution timers
+  // Bot / auto turns and trick resolution timers.
+  // Keyed on the engine's event counter + turn so every state transition
+  // schedules exactly one fresh decision from the *live* hand.
   useEffect(() => {
     if (state.phase === "over") return;
-    let t: ReturnType<typeof setTimeout>;
+    const timers: ReturnType<typeof setTimeout>[] = [];
     if (state.phase === "resolving") {
       const isThulla = state.trick.some((p) => p.card.suit !== state.leadSuit) && !state.firstTrick;
-      t = setTimeout(() => dispatch({ type: "RESOLVE_TRICK" }), delay * (isThulla ? 2.2 : 1.4));
+      timers.push(setTimeout(() => dispatch({ type: "RESOLVE_TRICK" }), delay * (isThulla ? 2.2 : 1.4)));
     } else {
       const p = state.players[state.turn]!;
       if (!p.isHuman || autoPlay) {
-        t = setTimeout(() => {
-          const card = chooseBotCard(state, state.turn);
-          if (card) dispatch({ type: "PLAY_CARD", player: state.turn, cardId: card.id });
-        }, delay);
+        const seatIdx = state.turn;
+        const seq = state.eventSeq;
+        const act = (fallback: boolean) => {
+          const live = stateRef.current;
+          // Stale timer guard: only act if the game hasn't moved on.
+          if (live.eventSeq !== seq || live.phase !== "playing" || live.turn !== seatIdx) return;
+          let card = fallback ? null : chooseBotCard(live, seatIdx);
+          if (!card || !isLegal(live, seatIdx, card.id)) card = legalCards(live, seatIdx)[0] ?? null;
+          if (card) dispatch({ type: "PLAY_CARD", player: seatIdx, cardId: card.id });
+        };
+        timers.push(setTimeout(() => act(false), delay));
+        // Watchdog: if the move somehow didn't register, force a legal play.
+        timers.push(setTimeout(() => act(true), delay * 3 + 500));
       }
     }
-    return () => clearTimeout(t);
-  }, [state, autoPlay, delay]);
+    return () => timers.forEach(clearTimeout);
+  }, [state.eventSeq, state.phase, state.turn, autoPlay, delay]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Sound + banner feedback
   useEffect(() => {
@@ -132,8 +147,11 @@ export function GameTable() {
                 state={state}
                 playerIdx={p.id}
                 position={SEAT[p.id]!}
+                bubble={bubbles[p.id]}
               />
             ))}
+
+            <ReactionLayer reactions={reactions} />
 
             {/* Trick area */}
             <div className="absolute left-1/2 top-1/2 h-[46%] w-[46%] -translate-x-1/2 -translate-y-1/2">
@@ -263,15 +281,21 @@ export function GameTable() {
           </div>
         </section>
 
-        {/* Log */}
-        <section className="mt-4 w-full max-w-5xl rounded-2xl border border-gold/15 bg-card/60 p-4 text-sm" aria-label="Game log">
-          <h2 className="mb-2 font-display text-xs uppercase tracking-[0.25em] text-gold/80">Table talk</h2>
-          <ul className="space-y-1 text-muted-foreground">
-            {state.log.slice(-5).map((line, i) => (
-              <li key={`${state.log.length}-${i}`} className={cn(i === Math.min(4, state.log.length - 1) && "text-foreground")}>{line}</li>
-            ))}
-          </ul>
-        </section>
+        {/* Reactions + chat */}
+        <div className="mt-4 grid w-full max-w-5xl gap-4 md:grid-cols-2">
+          <section className="rounded-2xl border border-gold/15 bg-card/60 p-4 text-sm" aria-label="Game log">
+            <div className="mb-2 flex items-center justify-between">
+              <h2 className="font-display text-xs uppercase tracking-[0.25em] text-gold/80">Table log</h2>
+              <StickerDrawer onPick={humanReact} />
+            </div>
+            <ul className="space-y-1 text-muted-foreground">
+              {state.log.slice(-5).map((line, i) => (
+                <li key={`${state.log.length}-${i}`} className={cn(i === Math.min(4, state.log.length - 1) && "text-foreground")}>{line}</li>
+              ))}
+            </ul>
+          </section>
+          <ChatPanel chat={chat} names={state.players.map((p) => p.name)} onSend={humanSay} />
+        </div>
 
         <details className="mt-3 w-full max-w-5xl text-xs text-muted-foreground">
           <summary className="cursor-pointer font-display text-gold/80">How to play</summary>
@@ -312,7 +336,7 @@ function trickPos(player: number): React.CSSProperties {
   }
 }
 
-function Seat({ state, playerIdx, position }: { state: GameState; playerIdx: number; position: (typeof SEAT)[number] }) {
+function Seat({ state, playerIdx, position, bubble }: { state: GameState; playerIdx: number; position: (typeof SEAT)[number]; bubble?: ChatMsg | undefined }) {
   const p = state.players[playerIdx]!;
   const isTurn = state.phase === "playing" && state.turn === playerIdx;
   const out = p.hand.length === 0 && state.finished.includes(playerIdx);
@@ -332,17 +356,20 @@ function Seat({ state, playerIdx, position }: { state: GameState; playerIdx: num
   return (
     <div className={cn("absolute z-10 flex items-center gap-2", posClass)}>
       <div className={cn("flex items-center gap-2", vertical && "flex-col")}>
-        <div
-          className={cn(
-            "relative flex h-12 w-12 items-center justify-center rounded-full border-2 font-display text-lg font-bold transition-all md:h-14 md:w-14",
-            isTurn ? "border-gold bg-gold text-gold-foreground shadow-[0_0_24px_oklch(0.85_0.15_85/0.8)] scale-110" : "border-gold/40 bg-black/30 text-gold",
-            out && "opacity-50",
-            isLoser && "border-destructive bg-destructive text-destructive-foreground",
-          )}
-          aria-label={`${p.name}${isTurn ? " (current turn)" : ""}`}
-        >
-          {p.name[0]}
-          {isTurn && <span className="absolute -inset-1 animate-ping rounded-full border-2 border-gold/60" />}
+        <div className="relative">
+          <SpeechBubble msg={bubble} position={position} />
+          <div
+            className={cn(
+              "relative flex h-12 w-12 items-center justify-center rounded-full border-2 font-display text-lg font-bold transition-all md:h-14 md:w-14",
+              isTurn ? "border-gold bg-gold text-gold-foreground shadow-[0_0_24px_oklch(0.85_0.15_85/0.8)] scale-110" : "border-gold/40 bg-black/30 text-gold",
+              out && "opacity-50",
+              isLoser && "border-destructive bg-destructive text-destructive-foreground",
+            )}
+            aria-label={`${p.name}${isTurn ? " (current turn)" : ""}`}
+          >
+            {p.name[0]}
+            {isTurn && <span className="absolute -inset-1 animate-ping rounded-full border-2 border-gold/60" />}
+          </div>
         </div>
         <div className={cn("text-center text-xs leading-tight", vertical ? "w-16" : "text-left")}>
           <div className={cn("font-display font-semibold", isTurn ? "text-gold" : "text-foreground/90")}>{p.name}</div>

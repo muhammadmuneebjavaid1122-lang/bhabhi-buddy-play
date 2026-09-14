@@ -37,6 +37,8 @@ export interface GameState {
   trickNo: number;
   event: GameEvent;
   eventSeq: number;
+  /** Suits each player is known to be out of (learned from off-suit plays). */
+  voids: Record<number, Suit[]>;
 }
 
 export type Action =
@@ -70,6 +72,7 @@ export function newGame(): GameState {
     trickNo: 1,
     event: null,
     eventSeq: 0,
+    voids: { 0: [], 1: [], 2: [], 3: [] },
   };
 }
 
@@ -119,9 +122,14 @@ export function reducer(state: GameState, action: Action): GameState {
       const thulla = card.suit !== leadSuit && !state.firstTrick;
       const log = [...state.log, `${state.players[player]!.name} played ${cardLabel(card)}${thulla ? " — THULLA!" : ""}`];
       const complete = thulla || trick.length >= state.trickPlayers.length;
+      const offSuit = state.trick.length > 0 && card.suit !== leadSuit;
+      const voids = offSuit && !(state.voids[player] ?? []).includes(leadSuit)
+        ? { ...state.voids, [player]: [...(state.voids[player] ?? []), leadSuit] }
+        : state.voids;
       return {
         ...state,
         players,
+        voids,
         trick,
         leadSuit,
         log,
@@ -142,6 +150,7 @@ export function reducer(state: GameState, action: Action): GameState {
 
       let players = state.players;
       let discardCount = state.discardCount;
+      let voids = state.voids;
       const log = [...state.log];
       let event: GameEvent;
 
@@ -150,6 +159,9 @@ export function reducer(state: GameState, action: Action): GameState {
         players = players.map((p, i) =>
           i === winner ? { ...p, hand: sortHand([...p.hand, ...picked]) } : p,
         );
+        // The picker now holds these suits again, so forget their voids for them.
+        const pickedSuits = new Set(picked.map((c) => c.suit));
+        voids = { ...voids, [winner]: (voids[winner] ?? []).filter((s) => !pickedSuits.has(s)) };
         log.push(`${state.players[winner]!.name} had the highest ${lead} and picks up ${picked.length} cards.`);
         event = { type: "thulla", picker: winner, count: picked.length, thrower: thullaPlay!.player };
       } else {
@@ -171,10 +183,11 @@ export function reducer(state: GameState, action: Action): GameState {
       const remaining = players.filter((p) => p.hand.length > 0).map((p) => p.id);
       if (remaining.length <= 1) {
         const loser = remaining[0] ?? null;
-        log.push(loser === null ? "Everyone got away — no Bhabhi this round!" : `${players[loser]!.name} is the Bhabhi!`);
+        log.push(loser === null ? "Everyone got away — no Bhabhi this round!" : `${players[loser]!.name} ${loser === 0 ? "are" : "is"} the Bhabhi!`);
         return {
           ...state,
           players,
+          voids,
           discardCount,
           finished,
           loser,
@@ -191,6 +204,7 @@ export function reducer(state: GameState, action: Action): GameState {
       return {
         ...state,
         players,
+        voids,
         discardCount,
         finished,
         log,
