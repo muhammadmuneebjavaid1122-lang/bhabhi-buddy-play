@@ -234,7 +234,7 @@ export function SpeechBubble({ msg, position }: { msg?: ChatMsg | undefined; pos
     <div
       key={msg.id}
       className={cn(
-        "absolute z-40 max-w-[11rem] rounded-2xl bg-card-face px-3 py-1.5 text-xs font-semibold text-card-black shadow-lg animate-in zoom-in-75 fade-in duration-200 md:text-sm",
+        "absolute z-40 w-max max-w-[11rem] rounded-2xl bg-card-face px-3 py-1.5 text-xs font-semibold text-card-black shadow-lg animate-in zoom-in-75 fade-in duration-200 md:text-sm",
         place,
       )}
     >
