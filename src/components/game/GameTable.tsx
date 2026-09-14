@@ -147,8 +147,11 @@ export function GameTable() {
                 state={state}
                 playerIdx={p.id}
                 position={SEAT[p.id]!}
+                bubble={bubbles[p.id]}
               />
             ))}
+
+            <ReactionLayer reactions={reactions} />
 
             {/* Trick area */}
             <div className="absolute left-1/2 top-1/2 h-[46%] w-[46%] -translate-x-1/2 -translate-y-1/2">
@@ -278,15 +281,21 @@ export function GameTable() {
           </div>
         </section>
 
-        {/* Log */}
-        <section className="mt-4 w-full max-w-5xl rounded-2xl border border-gold/15 bg-card/60 p-4 text-sm" aria-label="Game log">
-          <h2 className="mb-2 font-display text-xs uppercase tracking-[0.25em] text-gold/80">Table talk</h2>
-          <ul className="space-y-1 text-muted-foreground">
-            {state.log.slice(-5).map((line, i) => (
-              <li key={`${state.log.length}-${i}`} className={cn(i === Math.min(4, state.log.length - 1) && "text-foreground")}>{line}</li>
-            ))}
-          </ul>
-        </section>
+        {/* Reactions + chat */}
+        <div className="mt-4 grid w-full max-w-5xl gap-4 md:grid-cols-2">
+          <section className="rounded-2xl border border-gold/15 bg-card/60 p-4 text-sm" aria-label="Game log">
+            <div className="mb-2 flex items-center justify-between">
+              <h2 className="font-display text-xs uppercase tracking-[0.25em] text-gold/80">Table log</h2>
+              <StickerDrawer onPick={humanReact} />
+            </div>
+            <ul className="space-y-1 text-muted-foreground">
+              {state.log.slice(-5).map((line, i) => (
+                <li key={`${state.log.length}-${i}`} className={cn(i === Math.min(4, state.log.length - 1) && "text-foreground")}>{line}</li>
+              ))}
+            </ul>
+          </section>
+          <ChatPanel chat={chat} names={state.players.map((p) => p.name)} onSend={humanSay} />
+        </div>
 
         <details className="mt-3 w-full max-w-5xl text-xs text-muted-foreground">
           <summary className="cursor-pointer font-display text-gold/80">How to play</summary>
@@ -327,7 +336,7 @@ function trickPos(player: number): React.CSSProperties {
   }
 }
 
-function Seat({ state, playerIdx, position }: { state: GameState; playerIdx: number; position: (typeof SEAT)[number] }) {
+function Seat({ state, playerIdx, position, bubble }: { state: GameState; playerIdx: number; position: (typeof SEAT)[number]; bubble?: ChatMsg | undefined }) {
   const p = state.players[playerIdx]!;
   const isTurn = state.phase === "playing" && state.turn === playerIdx;
   const out = p.hand.length === 0 && state.finished.includes(playerIdx);
@@ -347,17 +356,20 @@ function Seat({ state, playerIdx, position }: { state: GameState; playerIdx: num
   return (
     <div className={cn("absolute z-10 flex items-center gap-2", posClass)}>
       <div className={cn("flex items-center gap-2", vertical && "flex-col")}>
-        <div
-          className={cn(
-            "relative flex h-12 w-12 items-center justify-center rounded-full border-2 font-display text-lg font-bold transition-all md:h-14 md:w-14",
-            isTurn ? "border-gold bg-gold text-gold-foreground shadow-[0_0_24px_oklch(0.85_0.15_85/0.8)] scale-110" : "border-gold/40 bg-black/30 text-gold",
-            out && "opacity-50",
-            isLoser && "border-destructive bg-destructive text-destructive-foreground",
-          )}
-          aria-label={`${p.name}${isTurn ? " (current turn)" : ""}`}
-        >
-          {p.name[0]}
-          {isTurn && <span className="absolute -inset-1 animate-ping rounded-full border-2 border-gold/60" />}
+        <div className="relative">
+          <SpeechBubble msg={bubble} position={position} />
+          <div
+            className={cn(
+              "relative flex h-12 w-12 items-center justify-center rounded-full border-2 font-display text-lg font-bold transition-all md:h-14 md:w-14",
+              isTurn ? "border-gold bg-gold text-gold-foreground shadow-[0_0_24px_oklch(0.85_0.15_85/0.8)] scale-110" : "border-gold/40 bg-black/30 text-gold",
+              out && "opacity-50",
+              isLoser && "border-destructive bg-destructive text-destructive-foreground",
+            )}
+            aria-label={`${p.name}${isTurn ? " (current turn)" : ""}`}
+          >
+            {p.name[0]}
+            {isTurn && <span className="absolute -inset-1 animate-ping rounded-full border-2 border-gold/60" />}
+          </div>
         </div>
         <div className={cn("text-center text-xs leading-tight", vertical ? "w-16" : "text-left")}>
           <div className={cn("font-display font-semibold", isTurn ? "text-gold" : "text-foreground/90")}>{p.name}</div>
