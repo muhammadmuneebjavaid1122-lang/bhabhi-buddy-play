@@ -183,7 +183,7 @@ export function reducer(state: GameState, action: Action): GameState {
       const remaining = players.filter((p) => p.hand.length > 0).map((p) => p.id);
       if (remaining.length <= 1) {
         const loser = remaining[0] ?? null;
-        log.push(loser === null ? "Everyone got away — no Bhabhi this round!" : `${players[loser]!.name} is the Bhabhi!`);
+        log.push(loser === null ? "Everyone got away — no Bhabhi this round!" : `${players[loser]!.name} ${loser === 0 ? "are" : "is"} the Bhabhi!`);
         return {
           ...state,
           players,
