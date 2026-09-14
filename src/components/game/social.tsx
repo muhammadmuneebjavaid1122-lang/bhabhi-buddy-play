@@ -266,7 +266,7 @@ export function StickerDrawer({ onPick, disabled }: { onPick: (s: Sticker) => vo
               title={s.label}
               aria-label={s.label}
               onClick={() => { onPick(s); setOpen(false); }}
-              className="rounded-xl p-1.5 text-2xl transition hover:scale-125 hover:bg-gold/10 active:scale-95"
+              className="relative rounded-xl p-1.5 text-2xl transition hover:z-10 hover:scale-125 hover:bg-gold/10 active:scale-95"
             >
               {s.emoji}
             </button>
