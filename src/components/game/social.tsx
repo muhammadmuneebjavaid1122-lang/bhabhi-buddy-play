@@ -13,7 +13,7 @@ export const STICKERS: Sticker[] = [
   { emoji: "😱", label: "Shocked", kind: "pop" },
   { emoji: "🔥", label: "Fire", kind: "float" },
   { emoji: "🍅", label: "Tomato toss", kind: "toss" },
-  { emoji: "🫏", label: "Bhabhi ears", kind: "pop" },
+  { emoji: "🐴", label: "Bhabhi ears", kind: "pop" },
   { emoji: "👏", label: "Clap", kind: "float" },
   { emoji: "😎", label: "Cool", kind: "pop" },
   { emoji: "💀", label: "Dead", kind: "pop" },
@@ -38,7 +38,7 @@ const BOT_LINES = {
   thullaWatcher: ["Nice Thulla!", "Ouch 😂", "Brutal.", "Somebody call an ambulance."],
   getaway: ["Bye bye! 👋", "Free at last!", "Catch me if you can.", "Good luck, you lot."],
   overWinner: ["Who is the Bhabhi now?", "GG!", "Better luck next deal 😎", "Good game!"],
-  overLoser: ["Ugh. Rematch!", "Rigged.", "I demand a re-deal.", "Not my day 🫏"],
+  overLoser: ["Ugh. Rematch!", "Rigged.", "I demand a re-deal.", "Not my day 🐴"],
   replyTaunt: ["Talk is cheap.", "We'll see about that.", "Big words for someone holding 13 cards.", "😂😂", "Cute.", "Play your cards then!"],
   replyGG: ["GG!", "Good game! 🤝", "Well played."],
   replyGeneric: ["Hmm.", "Focus on your cards!", "Sure sure.", "🤔", "Less chatting, more playing.", "Ha!"],
@@ -145,12 +145,12 @@ export function useSocial(state: GameState, sound: boolean) {
             if (b === loser) { say(b, pick(BOT_LINES.overLoser)); react(b, byEmoji("🙈")); }
             else {
               if (Math.random() < 0.7) say(b, pick(BOT_LINES.overWinner));
-              if (loser !== null) react(b, Math.random() < 0.5 ? byEmoji("🫏") : byEmoji("🍅"), loser);
+              if (loser !== null) react(b, Math.random() < 0.5 ? byEmoji("🐴") : byEmoji("🍅"), loser);
               else react(b, byEmoji("🔥"));
             }
           }, 500 + i * 700);
         });
-        if (loser !== null) later(() => react(loser, byEmoji("🫏")), 300);
+        if (loser !== null) later(() => react(loser, byEmoji("🐴")), 300);
         break;
       }
       case "play":
@@ -266,7 +266,7 @@ export function StickerDrawer({ onPick, disabled }: { onPick: (s: Sticker) => vo
               title={s.label}
               aria-label={s.label}
               onClick={() => { onPick(s); setOpen(false); }}
-              className="relative rounded-xl p-1.5 text-2xl transition hover:z-10 hover:scale-125 hover:bg-gold/10 active:scale-95"
+              className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl text-2xl leading-none transition hover:-translate-y-0.5 hover:bg-gold/10 active:scale-95"
             >
               {s.emoji}
             </button>
