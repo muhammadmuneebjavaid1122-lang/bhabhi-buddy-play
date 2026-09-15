@@ -185,6 +185,30 @@
   75% { transform: translate(-50%, -50%) scale(1.7, 0.5) rotate(720deg); }
   100% { left: var(--tx); top: var(--ty); transform: translate(-50%, -50%) scale(2, 0.35) rotate(720deg); opacity: 0; }
 }
+@keyframes thulla-table {
+  0%, 100% { transform: translateX(0); }
+  12% { transform: translateX(-10px) rotate(-0.5deg); }
+  25% { transform: translateX(9px) rotate(0.5deg); }
+  38% { transform: translateX(-6px); }
+  52% { transform: translateX(4px); }
+}
+@keyframes thulla-flash {
+  0% { opacity: 0; }
+  15% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes thulla-slam {
+  0% { transform: scale(2.6) rotate(-8deg); opacity: 0; }
+  30% { transform: scale(0.9) rotate(3deg); opacity: 1; }
+  45% { transform: scale(1.08) rotate(0); }
+  100% { transform: scale(1); opacity: 0; }
+}
+@keyframes thulla-card {
+  0% { transform: translate(calc((var(--thulla-i) - 3) * 35vw), -45vh) rotate(calc(var(--thulla-i) * 45deg)); opacity: 0; }
+  20% { opacity: 1; }
+  75% { transform: translate(calc((var(--thulla-i) - 3) * 5px), 5vh) rotate(calc(var(--thulla-i) * 12deg)); opacity: 1; }
+  100% { transform: translate(0, 18vh) scale(0.5); opacity: 0; }
+}
 
 @utility animate-float-up {
   animation: float-up 2.4s ease-out forwards;
@@ -194,4 +218,19 @@
 }
 @utility animate-toss {
   animation: toss 1.6s cubic-bezier(0.3, 0.7, 0.4, 1) forwards;
+}
+@utility animate-thulla-table {
+  animation: thulla-table 0.55s ease-in-out;
+}
+@utility animate-thulla-flash {
+  animation: thulla-flash 1.5s ease-out forwards;
+}
+@utility animate-thulla-slam {
+  animation: thulla-slam 1.7s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+@utility animate-thulla-card {
+  animation: thulla-card 1.65s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-thulla-table, .animate-thulla-flash, .animate-thulla-slam, .animate-thulla-card { animation-duration: 0.01ms; }
 }

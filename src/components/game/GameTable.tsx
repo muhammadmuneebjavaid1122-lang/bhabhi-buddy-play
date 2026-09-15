@@ -19,6 +19,7 @@ export function GameTable() {
   const [sound, setSound] = useState(true);
   const [speed, setSpeed] = useState<Speed>("normal");
   const [banner, setBanner] = useState<{ text: string; tone: "thulla" | "good" | "neutral" } | null>(null);
+  const [thullaBurst, setThullaBurst] = useState<{ picker: string; count: number } | null>(null);
   const lastSeq = useRef(0);
   const stateRef = useRef(state);
   stateRef.current = state;
@@ -77,6 +78,8 @@ export function GameTable() {
         break;
       case "thulla":
         if (sound) sfx.thulla();
+        setThullaBurst({ picker: names[ev.picker] ?? "Player", count: ev.count });
+        setTimeout(() => setThullaBurst(null), 1800);
         show(`${names[ev.picker]} ${ev.picker === 0 ? "pick" : "picks"} up ${ev.count} cards`, "thulla");
         break;
       case "trick":
@@ -137,7 +140,7 @@ export function GameTable() {
       {/* Table */}
       <main className="relative flex flex-1 flex-col items-center px-2 py-4 md:px-8">
         <div className="relative w-full max-w-5xl">
-          <div className="relative aspect-[4/3] w-full overflow-hidden rounded-[3rem] border-[10px] border-table-rim bg-felt shadow-[inset_0_0_120px_oklch(0_0_0/0.55),0_30px_60px_oklch(0_0_0/0.6)] md:aspect-[16/10]">
+          <div className={cn("relative aspect-[4/3] w-full overflow-hidden rounded-[3rem] border-[10px] border-table-rim bg-felt shadow-[inset_0_0_120px_oklch(0_0_0/0.55),0_30px_60px_oklch(0_0_0/0.6)] md:aspect-[16/10]", thullaBurst && "animate-thulla-table")}>
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,oklch(1_0_0/0.08),transparent_65%)]" />
 
             {/* Seats */}
@@ -152,6 +155,19 @@ export function GameTable() {
             ))}
 
             <ReactionLayer reactions={reactions} />
+
+            {thullaBurst && (
+              <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center overflow-hidden" aria-live="assertive">
+                <div className="absolute inset-0 animate-thulla-flash bg-destructive/35" />
+                {Array.from({ length: Math.min(thullaBurst.count, 7) }).map((_, index) => (
+                  <span key={index} className="absolute text-4xl animate-thulla-card" style={{ "--thulla-i": index } as React.CSSProperties}>🂠</span>
+                ))}
+                <div className="relative animate-thulla-slam text-center">
+                  <p className="font-display text-5xl font-bold text-destructive-foreground drop-shadow-2xl md:text-7xl">THULLA!</p>
+                  <p className="mt-2 rounded-full bg-background/80 px-5 py-2 font-bold text-foreground">{thullaBurst.picker} takes {thullaBurst.count}</p>
+                </div>
+              </div>
+            )}
 
             {/* Trick area */}
             <div className="absolute left-1/2 top-1/2 h-[46%] w-[46%] -translate-x-1/2 -translate-y-1/2">
@@ -282,19 +298,9 @@ export function GameTable() {
         </section>
 
         {/* Reactions + chat */}
-        <div className="mt-4 grid w-full max-w-5xl gap-4 md:grid-cols-2">
-          <section className="rounded-2xl border border-gold/15 bg-card/60 p-4 text-sm" aria-label="Game log">
-            <div className="mb-2 flex items-center justify-between">
-              <h2 className="font-display text-xs uppercase tracking-[0.25em] text-gold/80">Table log</h2>
-              <StickerDrawer onPick={humanReact} />
-            </div>
-            <ul className="space-y-1 text-muted-foreground">
-              {state.log.slice(-5).map((line, i) => (
-                <li key={`${state.log.length}-${i}`} className={cn(i === Math.min(4, state.log.length - 1) && "text-foreground")}>{line}</li>
-              ))}
-            </ul>
-          </section>
-          <ChatPanel chat={chat} names={state.players.map((p) => p.name)} onSend={humanSay} />
+        <div className="mt-4 flex w-full max-w-5xl items-start gap-3">
+          <div className="min-w-0 flex-1"><ChatPanel chat={chat} names={state.players.map((p) => p.name)} onSend={humanSay} /></div>
+          <StickerDrawer onPick={humanReact} />
         </div>
 
         <details className="mt-3 w-full max-w-5xl text-xs text-muted-foreground">
