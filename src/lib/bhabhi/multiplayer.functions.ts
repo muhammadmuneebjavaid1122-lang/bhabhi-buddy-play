@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { Json } from "@/integrations/supabase/types";
 import { newGame, reducer, type GameState } from "./engine";
 import type { Card } from "./cards";
 
@@ -56,7 +57,7 @@ async function startIfFull(admin: Admin, roomId: string) {
   state.players = deal.players.map((player, index) => ({ ...player, name: names[index] ?? `Player ${index + 1}`, isHuman: true }));
   state.turn = deal.turn;
   state.log = [`New online deal. ${state.players[state.turn]?.name ?? "A player"} leads the Ace of Spades.`];
-  const { error: stateError } = await admin.from("game_states").insert({ room_id: roomId, state });
+  const { error: stateError } = await admin.from("game_states").insert({ room_id: roomId, state: state as unknown as Json });
   if (stateError) throw stateError;
   const { error: roomError } = await admin.from("game_rooms").update({ status: "playing", version: 1 }).eq("id", roomId);
   if (roomError) throw roomError;
@@ -200,13 +201,14 @@ export const playOnlineCard = createServerFn({ method: "POST" })
     ]);
     if (!room || !stored || room.status !== "playing") throw new Error("This game is not active.");
     if (room.version !== data.version) throw new Error("The table moved on. Refreshing your hand.");
-    let state = reducer(stored.state as unknown as GameState, { type: "PLAY_CARD", player: member.seat, cardId: data.cardId });
-    if (state === stored.state) throw new Error("That card cannot be played now.");
+    const currentState = stored.state as unknown as GameState;
+    let state = reducer(currentState, { type: "PLAY_CARD", player: member.seat, cardId: data.cardId });
+    if (state.eventSeq === currentState.eventSeq) throw new Error("That card cannot be played now.");
     if (state.phase === "resolving") state = reducer(state, { type: "RESOLVE_TRICK" });
     const nextVersion = room.version + 1;
     const { data: locked } = await admin.from("game_rooms").update({ version: nextVersion, status: state.phase === "over" ? "finished" : "playing" }).eq("id", data.roomId).eq("version", data.version).select("id").maybeSingle();
     if (!locked) throw new Error("Another card arrived first. Refreshing your hand.");
-    const { error } = await admin.from("game_states").update({ state }).eq("room_id", data.roomId);
+    const { error } = await admin.from("game_states").update({ state: state as unknown as Json }).eq("room_id", data.roomId);
     if (error) throw error;
     return { version: nextVersion };
   });
