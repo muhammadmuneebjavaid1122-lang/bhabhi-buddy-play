@@ -6,4 +6,5 @@
 - [x] Synchronize online turns, chat, and reactions
 - [x] Remove the table log
 - [x] Add richer Thulla animation and sound
-- [ ] Verify practice and online entry flows
+- [x] Verify practice and public online entry flows
+- [ ] Verify a signed-in private room after the first user account exists
