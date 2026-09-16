@@ -209,6 +209,20 @@
   75% { transform: translate(calc((var(--thulla-i) - 3) * 5px), 5vh) rotate(calc(var(--thulla-i) * 12deg)); opacity: 1; }
   100% { transform: translate(0, 18vh) scale(0.5); opacity: 0; }
 }
+@keyframes brand-reveal {
+  0% { opacity: 0; transform: translateY(18px); }
+  25%, 75% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-12px); }
+}
+@keyframes brand-mark {
+  0% { transform: rotate(-18deg) scale(0.4); }
+  40% { transform: rotate(4deg) scale(1.08); }
+  65%, 100% { transform: rotate(0) scale(1); }
+}
+@keyframes brand-line {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
 
 @utility animate-float-up {
   animation: float-up 2.4s ease-out forwards;
@@ -231,6 +245,16 @@
 @utility animate-thulla-card {
   animation: thulla-card 1.65s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
 }
+@utility animate-brand-reveal {
+  animation: brand-reveal 2.2s ease-in-out forwards;
+}
+@utility animate-brand-mark {
+  animation: brand-mark 1.1s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@utility animate-brand-line {
+  animation: brand-line 0.8s 0.45s ease-out both;
+}
 @media (prefers-reduced-motion: reduce) {
   .animate-thulla-table, .animate-thulla-flash, .animate-thulla-slam, .animate-thulla-card { animation-duration: 0.01ms; }
+  .animate-brand-reveal, .animate-brand-mark, .animate-brand-line { animation-duration: 0.01ms; animation-delay: 0ms; }
 }

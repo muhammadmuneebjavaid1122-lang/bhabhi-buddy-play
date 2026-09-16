@@ -1,5 +1,5 @@
 import { ClientOnly, createFileRoute } from "@tanstack/react-router";
-import { GameTable } from "@/components/game/GameTable";
+import { GamePortal } from "@/components/game/GamePortal";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -24,7 +24,7 @@ function Index() {
         </div>
       }
     >
-      <GameTable />
+      <GamePortal />
     </ClientOnly>
   );
 }

@@ -44,18 +44,15 @@ async function startIfFull(admin: Admin, roomId: string) {
     .order("seat");
   if (error || !seats || seats.length !== 4) return;
   const names = seats.map((seat) => seat.display_name);
+  const deal = newGame();
   const state: GameState = {
-    ...newGame(),
-    players: newGame().players.map((player, index) => ({
+    ...deal,
+    players: deal.players.map((player, index) => ({
       ...player,
       name: names[index] ?? `Player ${index + 1}`,
       isHuman: true,
     })),
   };
-  // Rebuild once so the dealt hands and starter belong to the same deal.
-  const deal = newGame();
-  state.players = deal.players.map((player, index) => ({ ...player, name: names[index] ?? `Player ${index + 1}`, isHuman: true }));
-  state.turn = deal.turn;
   state.log = [`New online deal. ${state.players[state.turn]?.name ?? "A player"} leads the Ace of Spades.`];
   const { error: stateError } = await admin.from("game_states").insert({ room_id: roomId, state: state as unknown as Json });
   if (stateError) throw stateError;
