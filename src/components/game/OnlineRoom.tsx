@@ -7,6 +7,7 @@ import { PlayingCard } from "./PlayingCard";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Check, Copy, Globe2, LockKeyhole, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { sfx } from "@/lib/bhabhi/sound";
 
 type RoomView = Awaited<ReturnType<typeof getRoom>>;
 
@@ -18,6 +19,7 @@ export function OnlineRoom({ roomId, onLeave }: { roomId: string; onLeave: () =>
   const [error, setError] = useState("");
   const [chatText, setChatText] = useState("");
   const [copied, setCopied] = useState(false);
+  const [thullaBurst, setThullaBurst] = useState(false);
   const refresh = useCallback(async () => {
     try { setView(await fetchRoom({ data: { roomId } })); setError(""); }
     catch (cause) { setError(cause instanceof Error ? cause.message : "Could not refresh the table."); }
@@ -28,10 +30,19 @@ export function OnlineRoom({ roomId, onLeave }: { roomId: string; onLeave: () =>
     const channel = supabase.channel(`room-${roomId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "game_rooms", filter: `id=eq.${roomId}` }, refresh)
       .on("postgres_changes", { event: "*", schema: "public", table: "room_players", filter: `room_id=eq.${roomId}` }, refresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "game_states", filter: `room_id=eq.${roomId}` }, refresh)
       .on("postgres_changes", { event: "*", schema: "public", table: "room_messages", filter: `room_id=eq.${roomId}` }, refresh)
       .subscribe();
     return () => { void supabase.removeChannel(channel); };
   }, [refresh, roomId]);
+
+  useEffect(() => {
+    if (view?.game?.event?.type !== "thulla") return;
+    setThullaBurst(true);
+    sfx.thulla();
+    const timer = window.setTimeout(() => setThullaBurst(false), 1500);
+    return () => window.clearTimeout(timer);
+  }, [view?.game?.eventSeq]);
 
   if (!view) return <div className="flex min-h-screen items-center justify-center bg-background font-display text-gold">Finding your seat…</div>;
   if (view.room.status === "waiting") return <WaitingRoom view={view} onLeave={onLeave} copied={copied} onCopy={() => { void navigator.clipboard.writeText(view.room.code); setCopied(true); window.setTimeout(() => setCopied(false), 1500); }} />;
@@ -49,7 +60,8 @@ export function OnlineRoom({ roomId, onLeave }: { roomId: string; onLeave: () =>
         <div className="text-center"><p className="font-display font-bold text-gold">IBRA.INC · BHABHI</p><p className="text-xs text-muted-foreground">Room {view.room.code} · Live table</p></div>
         <div className="text-xs text-muted-foreground">{myTurn ? "Your turn" : `${game.players[game.turn]?.name ?? "Player"}'s turn`}</div>
       </header>
-      <section className="relative mx-auto aspect-[16/10] max-w-5xl overflow-hidden rounded-[3rem] border-[10px] border-table-rim bg-felt shadow-[inset_0_0_120px_oklch(0_0_0/0.55),0_30px_60px_oklch(0_0_0/0.6)]">
+      <section className={cn("relative mx-auto aspect-[16/10] max-w-5xl overflow-hidden rounded-[3rem] border-[10px] border-table-rim bg-felt shadow-[inset_0_0_120px_oklch(0_0_0/0.55),0_30px_60px_oklch(0_0_0/0.6)]", thullaBurst && "animate-thulla-table")}>
+        {thullaBurst && <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center bg-destructive/25 animate-thulla-flash"><strong className="font-display text-5xl font-black text-destructive-foreground drop-shadow-2xl animate-thulla-slam md:text-8xl">THULLA!</strong></div>}
         {game.players.map((player) => {
           const positions = ["bottom-4 left-1/2 -translate-x-1/2", "left-4 top-1/2 -translate-y-1/2", "top-4 left-1/2 -translate-x-1/2", "right-4 top-1/2 -translate-y-1/2"];
           return <div key={player.id} className={cn("absolute z-10 text-center", positions[player.id])}><div className={cn("mx-auto flex h-12 w-12 items-center justify-center rounded-full border-2 bg-background/70 font-display font-bold", game.turn === player.id ? "border-gold text-gold animate-pulse" : "border-foreground/30")}>{player.name[0]}</div><p className="mt-1 text-xs font-bold">{player.name}</p><p className="text-[10px] text-foreground/70">{player.hand.length} cards</p></div>;
