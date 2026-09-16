@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { createRoom, findMatch, getMyProfile, joinRoom, saveMyProfile } from "@/lib/bhabhi/multiplayer.functions";
 import { Globe2, LockKeyhole, LogIn, Sparkles, UserRound, Users } from "lucide-react";
 
-type SessionUser = { id: string; email?: string } | null;
+type SessionUser = { id: string; email: string | undefined } | null;
 
 export function GamePortal() {
   const [intro, setIntro] = useState(true);
