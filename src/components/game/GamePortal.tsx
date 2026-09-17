@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { Button } from "@/components/ui/button";
 import { createRoom, findMatch, getMyProfile, joinRoom, saveMyProfile } from "@/lib/bhabhi/multiplayer.functions";
+import { checkGuestQuota, consumeGuestGame, type GuestQuota } from "@/lib/bhabhi/guest";
 import { Globe2, LockKeyhole, LogIn, Sparkles, UserRound, Users } from "lucide-react";
 
 type SessionUser = { id: string; email: string | undefined } | null;
