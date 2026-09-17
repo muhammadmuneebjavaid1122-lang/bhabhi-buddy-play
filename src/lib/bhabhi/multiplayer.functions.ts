@@ -150,8 +150,18 @@ export const findMatch = createServerFn({ method: "POST" })
     const { data: existing } = await admin.from("room_players").select("room_id, game_rooms!inner(id, code, status, visibility, version)").eq("user_id", context.userId).eq("game_rooms.status", "waiting").eq("game_rooms.visibility", "public").limit(1).maybeSingle();
     const existingRoom = existing?.game_rooms;
     if (existingRoom && !Array.isArray(existingRoom)) return existingRoom;
-    const { data: rooms, error } = await admin.from("game_rooms").select("id, code, status, visibility, version").eq("visibility", "public").eq("status", "waiting").order("created_at").limit(8);
+    const freshSince = new Date(Date.now() - 20 * 60 * 1000).toISOString();
+    const { data: rooms, error } = await admin
+      .from("game_rooms")
+      .select("id, code, status, visibility, version, room_players(user_id)")
+      .eq("visibility", "public")
+      .eq("status", "waiting")
+      .gte("created_at", freshSince)
+      .order("created_at")
+      .limit(20);
     if (error) throw error;
+    // Fill the busiest table first so groups of four complete quickly.
+    (rooms ?? []).sort((a, b) => (b.room_players?.length ?? 0) - (a.room_players?.length ?? 0));
     for (const room of rooms ?? []) {
       try {
         await joinWaitingRoom(admin, room.id, context.userId, data.displayName);
