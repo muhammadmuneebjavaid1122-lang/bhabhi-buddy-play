@@ -89,6 +89,62 @@ export function OnlineRoom({ roomId, onLeave }: { roomId: string; onLeave: () =>
   );
 }
 
+const TIPS = [
+  "The Ace of Spades always leads the very first trick.",
+  "You must follow the led suit whenever you hold it.",
+  "Can't follow suit? Throw any card — that's a Thulla.",
+  "After a Thulla, the highest card of the led suit picks up the pile.",
+  "Whoever picks up the pile leads the next trick.",
+  "Dumping high cards early saves you from late pickups.",
+  "Track which suits opponents have run out of.",
+  "Empty your hand first to get away — the last player left is the Bhabhi.",
+];
+
 function WaitingRoom({ view, onLeave, copied, onCopy }: { view: RoomView; onLeave: () => void; copied: boolean; onCopy: () => void }) {
-  return <main className="min-h-screen bg-background px-5 py-8 text-foreground"><div className="mx-auto max-w-3xl"><Button variant="ghost" onClick={onLeave}><ArrowLeft /> Lobby</Button><div className="mt-16 text-center"><span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-gold/15 text-gold">{view.room.visibility === "private" ? <LockKeyhole /> : <Globe2 />}</span><h1 className="mt-5 font-display text-4xl font-bold">Waiting for players</h1><p className="mt-2 text-muted-foreground">The game starts automatically when all four seats are filled.</p><button type="button" onClick={onCopy} className="mx-auto mt-8 flex items-center gap-4 border border-gold bg-card px-6 py-4"><span><span className="block text-xs uppercase text-muted-foreground">Room code</span><strong className="font-mono text-3xl tracking-widest text-gold">{view.room.code}</strong></span>{copied ? <Check /> : <Copy />}</button></div><div className="mt-12 grid grid-cols-2 gap-3 md:grid-cols-4">{[0,1,2,3].map((seat) => { const player = view.players.find((candidate) => candidate.seat === seat); return <div key={seat} className="border border-gold/20 bg-card p-4 text-center"><div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gold/10 font-display text-gold">{player?.display_name[0] ?? seat + 1}</div><p className="mt-2 truncate font-bold">{player?.display_name ?? "Open seat"}</p><p className="text-xs text-muted-foreground">{player ? "Ready" : "Waiting…"}</p></div>; })}</div></div></main>;
+  const [tip, setTip] = useState(0);
+  useEffect(() => {
+    const timer = window.setInterval(() => setTip((current) => (current + 1) % TIPS.length), 15000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const isPrivate = view.room.visibility === "private";
+  const joined = view.players.length;
+  return (
+    <main className="flex min-h-screen flex-col bg-background px-5 py-8 text-foreground">
+      <div className="mx-auto w-full max-w-3xl flex-1">
+        <Button variant="ghost" onClick={onLeave}><ArrowLeft /> Lobby</Button>
+        <div className="mt-14 text-center">
+          <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-gold/15 text-gold">{isPrivate ? <LockKeyhole /> : <Globe2 />}</span>
+          <h1 className="mt-5 font-display text-4xl font-bold">{isPrivate ? "Waiting for friends" : "Matching you with players"}</h1>
+          <p className="mt-2 text-muted-foreground">{isPrivate ? "The game starts automatically when all four seats are filled." : "We're seating you with players from around the world. The deal begins at four."}</p>
+          <p className="mt-8 font-display text-5xl font-bold text-gold">{joined}<span className="text-2xl text-muted-foreground"> / 4</span></p>
+          <p className="text-xs uppercase tracking-widest text-muted-foreground">players joined</p>
+          <div className="mx-auto mt-4 h-2 w-64 overflow-hidden rounded-full bg-card">
+            <div className="h-full bg-gold transition-all duration-500" style={{ width: `${(joined / 4) * 100}%` }} />
+          </div>
+          {isPrivate && (
+            <button type="button" onClick={onCopy} className="mx-auto mt-8 flex items-center gap-4 border border-gold bg-card px-6 py-4">
+              <span><span className="block text-xs uppercase text-muted-foreground">Room code</span><strong className="font-mono text-3xl tracking-widest text-gold">{view.room.code}</strong></span>
+              {copied ? <Check /> : <Copy />}
+            </button>
+          )}
+        </div>
+        <div className="mt-12 grid grid-cols-2 gap-3 md:grid-cols-4">
+          {[0, 1, 2, 3].map((seat) => {
+            const player = view.players.find((candidate) => candidate.seat === seat);
+            return (
+              <div key={seat} className="border border-gold/20 bg-card p-4 text-center">
+                <div className={cn("mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gold/10 font-display text-gold", !player && "animate-pulse")}>{player?.display_name[0] ?? seat + 1}</div>
+                <p className="mt-2 truncate font-bold">{player?.display_name ?? "Open seat"}</p>
+                <p className="text-xs text-muted-foreground">{player ? "Ready" : "Waiting…"}</p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <footer className="mx-auto mt-10 w-full max-w-3xl border-t border-gold/20 pt-5 text-center">
+        <p className="text-xs font-bold uppercase tracking-widest text-gold">Tip</p>
+        <p key={tip} className="mt-2 animate-fade-in text-sm text-muted-foreground">{TIPS[tip]}</p>
+      </footer>
+    </main>
+  );
 }
