@@ -16,6 +16,8 @@ export function GamePortal() {
   const [mode, setMode] = useState<"lobby" | "practice" | "online">("lobby");
   const [user, setUser] = useState<SessionUser>(null);
   const [authReady, setAuthReady] = useState(false);
+  const [guestQuota, setGuestQuota] = useState<GuestQuota | null>(null);
+  const [guestNotice, setGuestNotice] = useState("");
   const [roomId, setRoomId] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
