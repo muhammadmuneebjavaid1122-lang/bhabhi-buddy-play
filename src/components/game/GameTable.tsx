@@ -35,7 +35,13 @@ export function GameTable({ onGameOver }: { onGameOver?: () => void } = {}) {
   // Keyed on the engine's event counter + turn so every state transition
   // schedules exactly one fresh decision from the *live* hand.
   useEffect(() => {
-    if (state.phase === "over") return;
+    if (state.phase === "over") {
+      if (!reportedOver.current) {
+        reportedOver.current = true;
+        onGameOver?.();
+      }
+      return;
+    }
     const timers: ReturnType<typeof setTimeout>[] = [];
     if (state.phase === "resolving") {
       const isThulla = state.trick.some((p) => p.card.suit !== state.leadSuit) && !state.firstTrick;
