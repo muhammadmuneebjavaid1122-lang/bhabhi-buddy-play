@@ -162,7 +162,7 @@ export const findMatch = createServerFn({ method: "POST" })
     if (error) throw error;
     // Fill the busiest table first so groups of four complete quickly.
     (rooms ?? []).sort((a, b) => (b.room_players?.length ?? 0) - (a.room_players?.length ?? 0));
-    for (const room of rooms ?? []) {
+    for (const { room_players: _seats, ...room } of rooms ?? []) {
       try {
         await joinWaitingRoom(admin, room.id, context.userId, data.displayName);
         return room;
