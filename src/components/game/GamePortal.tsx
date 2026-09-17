@@ -119,11 +119,17 @@ export function GamePortal() {
               <p className="mt-2 text-muted-foreground">Sign in to create private tables, use room codes, and join worldwide matchmaking.</p>
               <Button className="mt-6" size="lg" onClick={() => lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin })}><LogIn /> Continue with Google</Button>
             </div>
-            <button type="button" onClick={() => setMode("practice")} className="border border-gold/20 bg-card/50 p-7 text-left transition hover:border-gold/60 hover:bg-card">
+            <div className="border border-gold/20 bg-card/50 p-7">
               <span className="mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-gold/15 text-gold"><Users /></span>
-              <strong className="font-display text-xl">Practice with bots</strong>
-              <span className="mt-2 block text-sm text-muted-foreground">Start instantly. No account needed.</span>
-            </button>
+              <strong className="font-display text-xl">Continue as guest</strong>
+              <span className="mt-2 block text-sm text-muted-foreground">
+                {guestQuota?.blocked
+                  ? "Your 20 free guest games are finished on this device."
+                  : `Play against bots — ${guestQuota ? guestQuota.remaining : 20} of 20 free games left.`}
+              </span>
+              <Button className="mt-5" variant="secondary" disabled={guestQuota?.blocked} onClick={() => void startGuestGame()}>Play as guest</Button>
+              {guestNotice && <p role="alert" className="mt-3 text-sm text-destructive">{guestNotice}</p>}
+            </div>
           </section>
         ) : (
           <div className="space-y-8">
