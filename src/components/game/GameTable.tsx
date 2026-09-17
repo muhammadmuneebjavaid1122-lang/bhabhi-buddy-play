@@ -13,8 +13,9 @@ const SPEED_MS: Record<Speed, number> = { slow: 1100, normal: 650, fast: 220 };
 // Seat positions: 0 = South (human), 1 = West, 2 = North, 3 = East
 const SEAT = ["bottom", "left", "top", "right"] as const;
 
-export function GameTable() {
+export function GameTable({ onGameOver }: { onGameOver?: () => void } = {}) {
   const [state, dispatch] = useReducer(reducer, undefined, newGame);
+  const reportedOver = useRef(false);
   const [autoPlay, setAutoPlay] = useState(false);
   const [sound, setSound] = useState(true);
   const [speed, setSpeed] = useState<Speed>("normal");
