@@ -76,8 +76,24 @@ export function GamePortal() {
     }
   };
 
+  const startGuestGame = async () => {
+    setGuestNotice("");
+    const quota = await checkGuestQuota();
+    setGuestQuota(quota);
+    if (quota?.blocked) {
+      setGuestNotice("You've used all 20 free guest games on this device. Sign in to keep playing.");
+      return;
+    }
+    setMode("practice");
+  };
+
+  const finishGuestGame = () => {
+    if (user) return;
+    void consumeGuestGame().then((quota) => setGuestQuota(quota));
+  };
+
   if (intro) return <BrandIntro />;
-  if (mode === "practice") return <GameTable />;
+  if (mode === "practice") return <GameTable onGameOver={finishGuestGame} />;
   if (mode === "online" && roomId) return <OnlineRoom roomId={roomId} onLeave={() => { setRoomId(""); setMode("lobby"); }} />;
 
   const suggestedName = user?.email?.split("@")[0] ?? "";
