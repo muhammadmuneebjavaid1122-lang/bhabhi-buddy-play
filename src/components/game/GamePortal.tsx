@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { Button } from "@/components/ui/button";
 import { createRoom, findMatch, getMyProfile, joinRoom, saveMyProfile } from "@/lib/bhabhi/multiplayer.functions";
+import { checkGuestQuota, consumeGuestGame, type GuestQuota } from "@/lib/bhabhi/guest";
 import { Globe2, LockKeyhole, LogIn, Sparkles, UserRound, Users } from "lucide-react";
 
 type SessionUser = { id: string; email: string | undefined } | null;
@@ -15,6 +16,8 @@ export function GamePortal() {
   const [mode, setMode] = useState<"lobby" | "practice" | "online">("lobby");
   const [user, setUser] = useState<SessionUser>(null);
   const [authReady, setAuthReady] = useState(false);
+  const [guestQuota, setGuestQuota] = useState<GuestQuota | null>(null);
+  const [guestNotice, setGuestNotice] = useState("");
   const [roomId, setRoomId] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
@@ -43,6 +46,7 @@ export function GamePortal() {
           }
         }).catch(() => undefined);
       }
+      if (!authUser) void checkGuestQuota().then((quota) => setGuestQuota(quota));
     });
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ? { id: session.user.id, email: session.user.email } : null);
@@ -72,8 +76,24 @@ export function GamePortal() {
     }
   };
 
+  const startGuestGame = async () => {
+    setGuestNotice("");
+    const quota = await checkGuestQuota();
+    setGuestQuota(quota);
+    if (quota?.blocked) {
+      setGuestNotice("You've used all 20 free guest games on this device. Sign in to keep playing.");
+      return;
+    }
+    setMode("practice");
+  };
+
+  const finishGuestGame = () => {
+    if (user) return;
+    void consumeGuestGame().then((quota) => setGuestQuota(quota));
+  };
+
   if (intro) return <BrandIntro />;
-  if (mode === "practice") return <GameTable />;
+  if (mode === "practice") return <GameTable onGameOver={finishGuestGame} />;
   if (mode === "online" && roomId) return <OnlineRoom roomId={roomId} onLeave={() => { setRoomId(""); setMode("lobby"); }} />;
 
   const suggestedName = user?.email?.split("@")[0] ?? "";
@@ -99,11 +119,17 @@ export function GamePortal() {
               <p className="mt-2 text-muted-foreground">Sign in to create private tables, use room codes, and join worldwide matchmaking.</p>
               <Button className="mt-6" size="lg" onClick={() => lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin })}><LogIn /> Continue with Google</Button>
             </div>
-            <button type="button" onClick={() => setMode("practice")} className="border border-gold/20 bg-card/50 p-7 text-left transition hover:border-gold/60 hover:bg-card">
+            <div className="border border-gold/20 bg-card/50 p-7">
               <span className="mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-gold/15 text-gold"><Users /></span>
-              <strong className="font-display text-xl">Practice with bots</strong>
-              <span className="mt-2 block text-sm text-muted-foreground">Start instantly. No account needed.</span>
-            </button>
+              <strong className="font-display text-xl">Continue as guest</strong>
+              <span className="mt-2 block text-sm text-muted-foreground">
+                {guestQuota?.blocked
+                  ? "Your 20 free guest games are finished on this device."
+                  : `Play against bots — ${guestQuota ? guestQuota.remaining : 20} of 20 free games left.`}
+              </span>
+              <Button className="mt-5" variant="secondary" disabled={guestQuota?.blocked} onClick={() => void startGuestGame()}>Play as guest</Button>
+              {guestNotice && <p role="alert" className="mt-3 text-sm text-destructive">{guestNotice}</p>}
+            </div>
           </section>
         ) : (
           <div className="space-y-8">
