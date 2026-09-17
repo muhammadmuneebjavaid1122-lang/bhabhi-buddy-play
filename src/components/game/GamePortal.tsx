@@ -46,6 +46,7 @@ export function GamePortal() {
           }
         }).catch(() => undefined);
       }
+      if (!authUser) void checkGuestQuota().then((quota) => setGuestQuota(quota));
     });
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ? { id: session.user.id, email: session.user.email } : null);
