@@ -8,3 +8,4 @@
 - [x] Add richer Thulla animation and sound
 - [x] Verify practice and public online entry flows
 - [ ] Verify a signed-in private room after the first user account exists
+- [x] Remove the shuffle message and refresh cards, table, and practice bot names

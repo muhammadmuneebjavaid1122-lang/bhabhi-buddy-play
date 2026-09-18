@@ -46,11 +46,20 @@ export type Action =
   | { type: "RESOLVE_TRICK" }
   | { type: "NEW_GAME" };
 
-export const PLAYER_NAMES = ["You", "Rehan", "Sana", "Bilal"];
+const BOT_NAMES = [
+  "Aarav", "Aisha", "Ali", "Amara", "Arjun", "Daniyal", "Fatima", "Hamza",
+  "Hira", "Ibrahim", "Kabir", "Layla", "Maya", "Noor", "Omar", "Priya",
+  "Rayan", "Sara", "Veer", "Zara",
+];
+
+function randomPlayerNames(): string[] {
+  const names = shuffle(BOT_NAMES).slice(0, 3);
+  return ["You", ...names];
+}
 
 export function newGame(): GameState {
   const deck = shuffle(createDeck());
-  const players: Player[] = PLAYER_NAMES.map((name, id) => ({
+  const players: Player[] = randomPlayerNames().map((name, id) => ({
     id,
     name,
     isHuman: id === 0,

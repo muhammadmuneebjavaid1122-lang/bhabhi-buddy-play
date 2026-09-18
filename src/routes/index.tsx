@@ -17,13 +17,7 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   return (
-    <ClientOnly
-      fallback={
-        <div className="flex min-h-screen items-center justify-center bg-background font-display text-2xl text-gold">
-          Shuffling the deck…
-        </div>
-      }
-    >
+    <ClientOnly fallback={<div className="min-h-screen bg-background" aria-hidden />}>
       <GamePortal />
     </ClientOnly>
   );
