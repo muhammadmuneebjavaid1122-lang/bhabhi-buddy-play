@@ -146,9 +146,10 @@ export function GameTable({ onGameOver }: { onGameOver?: () => void } = {}) {
 
       {/* Table */}
       <main className="relative flex flex-1 flex-col items-center px-2 py-4 md:px-8">
-        <div className="relative w-full max-w-5xl">
-          <div className={cn("relative aspect-[4/3] w-full overflow-hidden rounded-[3rem] border-[10px] border-table-rim bg-felt shadow-[inset_0_0_120px_oklch(0_0_0/0.55),0_30px_60px_oklch(0_0_0/0.6)] md:aspect-[16/10]", thullaBurst && "animate-thulla-table")}>
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,oklch(1_0_0/0.08),transparent_65%)]" />
+        <div className="relative w-full max-w-6xl">
+          <div className={cn("relative aspect-[4/5] min-h-[34rem] w-full overflow-hidden rounded-[2.25rem] border-[12px] border-table-rim bg-felt shadow-[inset_0_0_120px_var(--table-inner-shadow),0_30px_60px_var(--table-drop-shadow)] sm:aspect-[4/3] sm:min-h-0 md:aspect-[16/10] md:rounded-[4rem] md:border-[16px]", thullaBurst && "animate-thulla-table")}> 
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,var(--felt-highlight),transparent_68%)]" />
+            <div className="pointer-events-none absolute inset-2 rounded-[1.6rem] border border-gold/15 md:rounded-[3rem]" />
 
             {/* Seats */}
             {state.players.map((p) => (
@@ -177,7 +178,7 @@ export function GameTable({ onGameOver }: { onGameOver?: () => void } = {}) {
             )}
 
             {/* Trick area */}
-            <div className="absolute left-1/2 top-1/2 h-[46%] w-[46%] -translate-x-1/2 -translate-y-1/2">
+            <div className="absolute left-1/2 top-1/2 h-[42%] w-[54%] -translate-x-1/2 -translate-y-1/2 md:h-[48%] md:w-[48%]">
               {state.trick.map((play, i) => {
                 const pos = trickPos(play.player);
                 return (
@@ -192,7 +193,7 @@ export function GameTable({ onGameOver }: { onGameOver?: () => void } = {}) {
               })}
               {state.trick.length === 0 && state.phase !== "over" && (
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="rounded-full border border-gold/30 bg-black/20 px-4 py-2 text-center font-display text-sm text-gold/90 backdrop-blur-sm">
+                   <div className="rounded-full border border-gold/30 bg-background/25 px-4 py-2 text-center font-display text-sm text-gold/90 backdrop-blur-sm">
                     {statusText}
                   </div>
                 </div>
@@ -200,19 +201,19 @@ export function GameTable({ onGameOver }: { onGameOver?: () => void } = {}) {
             </div>
 
             {/* Discard pile */}
-            <div className="absolute bottom-4 right-4 flex flex-col items-center gap-1 md:bottom-6 md:right-6">
-              <div className="relative h-14 w-10">
+             <div className="absolute bottom-4 right-4 flex flex-col items-center gap-1 md:bottom-7 md:right-8">
+               <div className="relative h-[4.5rem] w-[3.15rem]">
                 {Array.from({ length: Math.min(4, Math.ceil(state.discardCount / 4)) }).map((_, i) => (
                   <PlayingCard key={i} faceDown size="sm" className="absolute" style={{ top: -i * 2, left: -i * 2 }} />
                 ))}
-                {state.discardCount === 0 && <div className="h-14 w-10 rounded-md border border-dashed border-gold/30" />}
+                 {state.discardCount === 0 && <div className="h-[4.5rem] w-[3.15rem] rounded-md border border-dashed border-gold/30" />}
               </div>
               <span className="text-[10px] uppercase tracking-wider text-gold/70">Discard {state.discardCount}</span>
             </div>
 
             {/* Lead suit badge */}
             {state.leadSuit && (
-              <div className="absolute left-4 top-4 rounded-full bg-black/30 px-3 py-1 text-xs text-gold md:left-6 md:top-6">
+                 <div className="absolute left-4 top-4 rounded-full bg-background/30 px-3 py-1 text-xs text-gold md:left-6 md:top-6">
                 Lead: <span className="text-base">{state.leadSuit}</span>
               </div>
             )}
@@ -271,14 +272,14 @@ export function GameTable({ onGameOver }: { onGameOver?: () => void } = {}) {
         </div>
 
         {/* Human hand */}
-        <section className="mt-6 w-full max-w-5xl" aria-label="Your hand">
+        <section className="mt-6 w-full max-w-6xl" aria-label="Your hand">
           <div className="mb-2 flex items-center justify-between px-2 text-sm">
             <span className={cn("font-display", humanTurn ? "text-gold" : "text-muted-foreground")}>
               {humanTurn ? statusText : `Your hand · ${human.hand.length} cards`}
             </span>
             {humanTurn && <span className="text-xs text-muted-foreground">Highlighted cards are playable</span>}
           </div>
-          <div className="flex h-40 items-end justify-center overflow-visible md:h-44">
+          <div className="flex h-48 items-end justify-center overflow-visible md:h-52">
             {human.hand.map((card, i) => {
               const n = human.hand.length;
               const mid = (n - 1) / 2;
@@ -293,7 +294,7 @@ export function GameTable({ onGameOver }: { onGameOver?: () => void } = {}) {
                   highlight={ok}
                   disabled={!ok}
                   onClick={() => ok && dispatch({ type: "PLAY_CARD", player: 0, cardId: card.id })}
-                  className={cn("origin-bottom -mx-3 md:-mx-2", !ok && humanTurn && "opacity-45 saturate-50", !humanTurn && "opacity-90")}
+                  className={cn("origin-bottom -mx-5 sm:-mx-4 md:-mx-3", !ok && humanTurn && "opacity-45 saturate-50", !humanTurn && "opacity-90")}
                   style={{ transform: `rotate(${rot}deg) translateY(${lift}px)`, zIndex: i }}
                 />
               );
@@ -373,8 +374,8 @@ function Seat({ state, playerIdx, position, bubble }: { state: GameState; player
           <SpeechBubble msg={bubble} position={position} />
           <div
             className={cn(
-              "relative flex h-12 w-12 items-center justify-center rounded-full border-2 font-display text-lg font-bold transition-all md:h-14 md:w-14",
-              isTurn ? "border-gold bg-gold text-gold-foreground shadow-[0_0_24px_oklch(0.85_0.15_85/0.8)] scale-110" : "border-gold/40 bg-black/30 text-gold",
+               "relative flex h-12 w-12 items-center justify-center rounded-full border-2 font-display text-lg font-bold transition-all md:h-16 md:w-16 md:text-xl",
+               isTurn ? "scale-110 border-gold bg-gold text-gold-foreground shadow-[0_0_24px_var(--turn-glow)]" : "border-gold/40 bg-background/30 text-gold",
               out && "opacity-50",
               isLoser && "border-destructive bg-destructive text-destructive-foreground",
             )}
@@ -393,7 +394,7 @@ function Seat({ state, playerIdx, position, bubble }: { state: GameState; player
         </div>
       </div>
       {!p.isHuman && p.hand.length > 0 && (
-        <div className={cn("relative", vertical ? "h-24 w-10" : "h-14 w-24")}>
+         <div className={cn("relative", vertical ? "h-28 w-[3.15rem]" : "h-[4.5rem] w-28")}> 
           {Array.from({ length: backs }).map((_, i) => (
             <PlayingCard
               key={i}
