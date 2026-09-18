@@ -187,7 +187,7 @@ export function GameTable({ onGameOver }: { onGameOver?: () => void } = {}) {
                     className="absolute animate-in fade-in zoom-in-75 duration-300"
                     style={{ ...pos, zIndex: i + 1 }}
                   >
-                    <PlayingCard card={play.card} size="md" style={{ transform: `rotate(${(play.player * 37) % 15 - 7}deg)` }} />
+                    <PlayingCard card={play.card} size="table" style={{ transform: `rotate(${(play.player * 37) % 15 - 7}deg)` }} />
                   </div>
                 );
               })}
@@ -202,11 +202,11 @@ export function GameTable({ onGameOver }: { onGameOver?: () => void } = {}) {
 
             {/* Discard pile */}
              <div className="absolute bottom-4 right-4 flex flex-col items-center gap-1 md:bottom-7 md:right-8">
-               <div className="relative h-[4.5rem] w-[3.15rem]">
+               <div className="relative h-[5.25rem] w-[3.75rem]">
                 {Array.from({ length: Math.min(4, Math.ceil(state.discardCount / 4)) }).map((_, i) => (
                   <PlayingCard key={i} faceDown size="sm" className="absolute" style={{ top: -i * 2, left: -i * 2 }} />
                 ))}
-                 {state.discardCount === 0 && <div className="h-[4.5rem] w-[3.15rem] rounded-md border border-dashed border-gold/30" />}
+                  {state.discardCount === 0 && <div className="h-[5.25rem] w-[3.75rem] rounded-md border border-dashed border-gold/30" />}
               </div>
               <span className="text-[10px] uppercase tracking-wider text-gold/70">Discard {state.discardCount}</span>
             </div>
@@ -394,7 +394,7 @@ function Seat({ state, playerIdx, position, bubble }: { state: GameState; player
         </div>
       </div>
       {!p.isHuman && p.hand.length > 0 && (
-         <div className={cn("relative", vertical ? "h-28 w-[3.15rem]" : "h-[4.5rem] w-28")}> 
+         <div className={cn("relative", vertical ? "h-32 w-[3.75rem]" : "h-[5.25rem] w-32")}>
           {Array.from({ length: backs }).map((_, i) => (
             <PlayingCard
               key={i}

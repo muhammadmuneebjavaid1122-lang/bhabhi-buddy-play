@@ -67,7 +67,7 @@ export function OnlineRoom({ roomId, onLeave }: { roomId: string; onLeave: () =>
           return <div key={player.id} className={cn("absolute z-10 text-center", positions[player.id])}><div className={cn("mx-auto flex h-12 w-12 items-center justify-center rounded-full border-2 bg-background/70 font-display font-bold", game.turn === player.id ? "border-gold text-gold animate-pulse" : "border-foreground/30")}>{player.name[0]}</div><p className="mt-1 text-xs font-bold">{player.name}</p><p className="text-[10px] text-foreground/70">{player.hand.length} cards</p></div>;
         })}
         <div className="absolute left-1/2 top-1/2 flex h-[45%] w-[45%] -translate-x-1/2 -translate-y-1/2 items-center justify-center">
-          {game.trick.map((item, index) => <PlayingCard key={item.card.id} card={item.card} size="md" className="absolute" style={{ transform: `rotate(${index * 18 - 25}deg) translate(${(index - 1.5) * 14}px, ${(index % 2) * 12}px)` }} />)}
+          {game.trick.map((item, index) => <PlayingCard key={item.card.id} card={item.card} size="table" className="absolute" style={{ transform: `rotate(${index * 18 - 25}deg) translate(${(index - 1.5) * 18}px, ${(index % 2) * 14}px)` }} />)}
           {game.trick.length === 0 && <p className="rounded-full bg-background/35 px-4 py-2 font-display text-sm text-gold">{myTurn ? "Your turn" : "Waiting for the next card…"}</p>}
         </div>
       </section>
