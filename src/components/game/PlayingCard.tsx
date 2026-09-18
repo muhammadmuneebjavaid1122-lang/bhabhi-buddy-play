@@ -4,7 +4,7 @@ import { isRed, rankLabel, type Card } from "@/lib/bhabhi/cards";
 interface Props {
   card?: Card;
   faceDown?: boolean;
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "table" | "lg";
   className?: string;
   style?: React.CSSProperties;
   onClick?: () => void;
@@ -13,9 +13,10 @@ interface Props {
 }
 
 const sizes = {
-  sm: "h-[4.5rem] w-[3.15rem] rounded-md text-[11px]",
-  md: "h-28 w-20 rounded-lg text-base",
-  lg: "h-40 w-28 rounded-xl text-xl",
+  sm: "h-[5.25rem] w-[3.75rem] rounded-md text-xs",
+  md: "h-32 w-[5.5rem] rounded-lg text-lg",
+  table: "h-32 w-[5.5rem] rounded-lg text-lg sm:h-40 sm:w-28 sm:rounded-xl sm:text-xl",
+  lg: "h-44 w-32 rounded-xl text-xl",
 };
 
 export function PlayingCard({ card, faceDown, size = "md", className, style, onClick, disabled, highlight }: Props) {
@@ -63,7 +64,7 @@ export function PlayingCard({ card, faceDown, size = "md", className, style, onC
         <span className="mt-0.5 text-[0.8em]">{card.suit}</span>
       </div>
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className={cn("drop-shadow-sm", size === "lg" ? "text-6xl" : size === "md" ? "text-4xl" : "text-2xl")}>{card.suit}</span>
+        <span className={cn("drop-shadow-sm", size === "lg" || size === "table" ? "text-6xl" : size === "md" ? "text-5xl" : "text-3xl")}>{card.suit}</span>
       </div>
       <div className="relative z-10 flex rotate-180 flex-col items-center self-end leading-[0.85]">
         <span className="font-bold">{rankLabel(card.rank)}</span>
