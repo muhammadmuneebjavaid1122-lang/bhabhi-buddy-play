@@ -81,7 +81,7 @@ export function GameTable({ onGameOver }: { onGameOver?: () => void } = {}) {
     switch (ev.type) {
       case "play":
         if (sound) sfx.play();
-        if (ev.thulla) show(`THULLA! ${names[ev.player]} can't follow suit`, "thulla", delay * 2);
+        if (ev.thulla) show("THULLA!", "thulla", delay * 2);
         break;
       case "thulla":
         if (sound) sfx.thulla();
