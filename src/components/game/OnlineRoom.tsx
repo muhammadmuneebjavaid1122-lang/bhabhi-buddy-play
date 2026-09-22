@@ -1,13 +1,14 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { getRoom, playOnlineCard, sendRoomMessage } from "@/lib/bhabhi/multiplayer.functions";
 import { legalCards, type GameState } from "@/lib/bhabhi/engine";
 import { PlayingCard } from "./PlayingCard";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Check, Copy, Globe2, LockKeyhole, Send } from "lucide-react";
+import { ArrowLeft, Check, Copy, Globe2, LockKeyhole, MessageCircle, MessageCircleOff, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { sfx } from "@/lib/bhabhi/sound";
+import { ReactionLayer, STICKERS, StickerDrawer, type Reaction, type Sticker } from "./social";
 
 type RoomView = Awaited<ReturnType<typeof getRoom>>;
 
@@ -18,6 +19,7 @@ export function OnlineRoom({ roomId, onLeave }: { roomId: string; onLeave: () =>
   const [view, setView] = useState<RoomView | null>(null);
   const [error, setError] = useState("");
   const [chatText, setChatText] = useState("");
+  const [chatEnabled, setChatEnabled] = useState(true);
   const [copied, setCopied] = useState(false);
   const [thullaBurst, setThullaBurst] = useState(false);
   const [thullaImpact, setThullaImpact] = useState(false);
@@ -60,6 +62,18 @@ export function OnlineRoom({ roomId, onLeave }: { roomId: string; onLeave: () =>
   const playable = new Set(legalCards(game, view.seat).map((card) => card.id));
   const myTurn = game.phase === "playing" && game.turn === view.seat;
   const nameFor = (userId: string) => view.players.find((player) => player.user_id === userId)?.display_name ?? "Player";
+  const reactions = useMemo(() => view.messages
+    .filter((message) => message.kind === "reaction")
+    .slice(-8)
+    .flatMap((message): Reaction[] => {
+      const sticker = STICKERS.find((item) => item.emoji === message.content);
+      const player = view.players.find((candidate) => candidate.user_id === message.user_id);
+      return sticker && player ? [{ id: message.id, player: player.seat, emoji: sticker.emoji, kind: sticker.kind }] : [];
+    }), [view.messages, view.players]);
+  const sendSticker = (sticker: Sticker) => {
+    if (!chatEnabled) return;
+    void send({ data: { roomId, kind: "reaction", content: sticker.emoji } });
+  };
   return (
     <main className="min-h-screen bg-background px-3 py-4 text-foreground md:px-8">
       <header className="mx-auto mb-4 flex max-w-6xl items-center justify-between gap-3 border-b border-gold/20 pb-3">
@@ -68,6 +82,7 @@ export function OnlineRoom({ roomId, onLeave }: { roomId: string; onLeave: () =>
         <div className="text-xs text-muted-foreground">{myTurn ? "Your turn" : `${game.players[game.turn]?.name ?? "Player"}'s turn`}</div>
       </header>
       <section className={cn("relative mx-auto aspect-[16/10] max-w-5xl overflow-hidden rounded-[3rem] border-[10px] border-table-rim bg-felt shadow-[inset_0_0_120px_oklch(0_0_0/0.55),0_30px_60px_oklch(0_0_0/0.6)]", thullaImpact && "animate-thulla-impact")}>
+        {chatEnabled && <ReactionLayer reactions={reactions} />}
         {thullaBurst && game.event?.type === "thulla" && (
           <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center">
             <div className={cn("absolute inset-0 bg-destructive/25", thullaImpact && "animate-thulla-flash")} />
@@ -93,9 +108,16 @@ export function OnlineRoom({ roomId, onLeave }: { roomId: string; onLeave: () =>
         </div>
       </section>
       <section className="mx-auto mt-4 max-w-5xl border-t border-gold/20 pt-4">
-        <div className="mb-3 flex flex-wrap gap-2">{["Nice Thulla!", "Watch this move!", "Good game!", "😂", "🔥", "🍅"].map((text) => <Button key={text} variant="outline" size="sm" onClick={() => send({ data: { roomId, kind: text.length <= 2 ? "reaction" : "chat", content: text } })}>{text}</Button>)}</div>
-        <div className="max-h-28 overflow-y-auto text-sm text-muted-foreground">{view.messages.slice(-8).map((message) => <p key={message.id}><strong className="text-foreground">{nameFor(message.user_id)}:</strong> {message.content}</p>)}</div>
-        <form className="mt-3 flex gap-2" onSubmit={(event) => { event.preventDefault(); if (!chatText.trim()) return; void send({ data: { roomId, kind: "chat", content: chatText } }).then(() => setChatText("")); }}><input value={chatText} onChange={(event) => setChatText(event.target.value)} maxLength={120} aria-label="Chat message" className="min-w-0 flex-1 border border-input bg-card px-3 py-2 outline-none focus:border-gold" placeholder="Say something…" /><Button type="submit" size="icon" title="Send"><Send /></Button></form>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="flex flex-wrap gap-2">{chatEnabled && ["Nice Thulla!", "Watch this move!", "Good game!"].map((text) => <Button key={text} variant="outline" size="sm" onClick={() => send({ data: { roomId, kind: "chat", content: text } })}>{text}</Button>)}</div>
+          <div className="flex items-center gap-2"><StickerDrawer onPick={sendSticker} disabled={!chatEnabled} /><Button variant="outline" size="sm" onClick={() => setChatEnabled((value) => !value)}>{chatEnabled ? <MessageCircle /> : <MessageCircleOff />}{chatEnabled ? "Chat on" : "Chat off"}</Button></div>
+        </div>
+        {chatEnabled ? (
+          <>
+            <div className="max-h-28 overflow-y-auto text-sm text-muted-foreground">{view.messages.filter((message) => message.kind === "chat").slice(-8).map((message) => <p key={message.id}><strong className="text-foreground">{nameFor(message.user_id)}:</strong> {message.content}</p>)}</div>
+            <form className="mt-3 flex gap-2" onSubmit={(event) => { event.preventDefault(); if (!chatText.trim()) return; void send({ data: { roomId, kind: "chat", content: chatText } }).then(() => setChatText("")); }}><input value={chatText} onChange={(event) => setChatText(event.target.value)} maxLength={120} aria-label="Chat message" className="min-w-0 flex-1 border border-input bg-card px-3 py-2 outline-none focus:border-gold" placeholder="Say something…" /><Button type="submit" size="icon" title="Send"><Send /></Button></form>
+          </>
+        ) : <p className="text-sm text-muted-foreground">Chat and reactions are muted for this game.</p>}
         {error && <p role="alert" className="mt-2 text-sm text-destructive">{error}</p>}
       </section>
     </main>
