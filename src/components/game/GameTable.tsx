@@ -21,6 +21,8 @@ export function GameTable({ onGameOver }: { onGameOver?: () => void } = {}) {
   const [speed, setSpeed] = useState<Speed>("normal");
   const [banner, setBanner] = useState<{ text: string; tone: "thulla" | "good" | "neutral" } | null>(null);
   const [thullaBurst, setThullaBurst] = useState<{ picker: string; count: number } | null>(null);
+  const [flyingThullaCard, setFlyingThullaCard] = useState<string | null>(null);
+  const [thullaImpact, setThullaImpact] = useState(false);
   const lastSeq = useRef(0);
   const stateRef = useRef(state);
   stateRef.current = state;
@@ -74,6 +76,7 @@ export function GameTable({ onGameOver }: { onGameOver?: () => void } = {}) {
     const ev = state.event;
     const names = state.players.map((p) => p.name);
     let bannerTimeout: ReturnType<typeof setTimeout> | undefined;
+    const effectTimers: ReturnType<typeof setTimeout>[] = [];
     const show = (text: string, tone: "thulla" | "good" | "neutral", ms = 1400) => {
       setBanner({ text, tone });
       bannerTimeout = setTimeout(() => setBanner(null), ms);
@@ -81,7 +84,14 @@ export function GameTable({ onGameOver }: { onGameOver?: () => void } = {}) {
     switch (ev.type) {
       case "play":
         if (sound) sfx.play();
-        if (ev.thulla) show("THULLA!", "thulla", delay * 2);
+        if (ev.thulla) {
+          setFlyingThullaCard(ev.card.id);
+          setThullaImpact(false);
+          effectTimers.push(setTimeout(() => setThullaImpact(true), 680));
+          effectTimers.push(setTimeout(() => setThullaImpact(false), 1250));
+          effectTimers.push(setTimeout(() => setFlyingThullaCard(null), 1450));
+          show("THULLA!", "thulla", delay * 2);
+        }
         break;
       case "thulla":
         if (sound) sfx.thulla();
@@ -100,7 +110,10 @@ export function GameTable({ onGameOver }: { onGameOver?: () => void } = {}) {
         if (sound) (ev.loser === 0 ? sfx.lose : sfx.win)();
         break;
     }
-    return () => clearTimeout(bannerTimeout);
+    return () => {
+      clearTimeout(bannerTimeout);
+      effectTimers.forEach(clearTimeout);
+    };
   }, [state, sound, delay]);
 
   const statusText = (() => {
@@ -147,7 +160,7 @@ export function GameTable({ onGameOver }: { onGameOver?: () => void } = {}) {
       {/* Table */}
       <main className="relative flex flex-1 flex-col items-center px-2 py-4 md:px-8">
         <div className="relative w-full max-w-6xl">
-          <div className={cn("relative aspect-[4/5] min-h-[34rem] w-full overflow-hidden rounded-[2.25rem] border-[12px] border-table-rim bg-felt shadow-[inset_0_0_120px_var(--table-inner-shadow),0_30px_60px_var(--table-drop-shadow)] sm:aspect-[4/3] sm:min-h-0 md:aspect-[16/10] md:rounded-[4rem] md:border-[16px]", thullaBurst && "animate-thulla-table")}> 
+          <div className={cn("relative aspect-[4/5] min-h-[34rem] w-full overflow-hidden rounded-[2.25rem] border-[12px] border-table-rim bg-felt shadow-[inset_0_0_120px_var(--table-inner-shadow),0_30px_60px_var(--table-drop-shadow)] sm:aspect-[4/3] sm:min-h-0 md:aspect-[16/10] md:rounded-[4rem] md:border-[16px]", thullaBurst && "animate-thulla-table", thullaImpact && "animate-thulla-impact")}> 
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,var(--felt-highlight),transparent_68%)]" />
             <div className="pointer-events-none absolute inset-2 rounded-[1.6rem] border border-gold/15 md:rounded-[3rem]" />
 
@@ -184,7 +197,11 @@ export function GameTable({ onGameOver }: { onGameOver?: () => void } = {}) {
                 return (
                   <div
                     key={play.card.id}
-                    className="absolute animate-in fade-in zoom-in-75 duration-300"
+                    className={cn(
+                      "absolute animate-in fade-in zoom-in-75 duration-300",
+                      flyingThullaCard === play.card.id && "thulla-airborne",
+                      thullaImpact && flyingThullaCard !== play.card.id && "animate-card-judder",
+                    )}
                     style={{ ...pos, zIndex: i + 1 }}
                   >
                     <PlayingCard card={play.card} size="table" style={{ transform: `rotate(${(play.player * 37) % 15 - 7}deg)` }} />
