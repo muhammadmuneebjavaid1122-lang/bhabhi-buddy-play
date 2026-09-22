@@ -14,7 +14,7 @@ export interface Play {
 
 export type GameEvent =
   | { type: "play"; player: number; card: Card; thulla: boolean }
-  | { type: "thulla"; picker: number; count: number; thrower: number }
+  | { type: "thulla"; picker: number; count: number; thrower: number; card: Card }
   | { type: "trick"; winner: number }
   | { type: "getaway"; player: number }
   | { type: "over"; loser: number | null }
@@ -172,7 +172,7 @@ export function reducer(state: GameState, action: Action): GameState {
         const pickedSuits = new Set(picked.map((c) => c.suit));
         voids = { ...voids, [winner]: (voids[winner] ?? []).filter((s) => !pickedSuits.has(s)) };
         log.push(`${state.players[winner]!.name} had the highest ${lead} and picks up ${picked.length} cards.`);
-        event = { type: "thulla", picker: winner, count: picked.length, thrower: thullaPlay!.player };
+        event = { type: "thulla", picker: winner, count: picked.length, thrower: thullaPlay!.player, card: thullaPlay!.card };
       } else {
         discardCount += state.trick.length;
         log.push(`${state.players[winner]!.name} won the trick with ${cardLabel(winnerPlay.card)}.`);

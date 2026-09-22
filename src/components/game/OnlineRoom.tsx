@@ -20,6 +20,7 @@ export function OnlineRoom({ roomId, onLeave }: { roomId: string; onLeave: () =>
   const [chatText, setChatText] = useState("");
   const [copied, setCopied] = useState(false);
   const [thullaBurst, setThullaBurst] = useState(false);
+  const [thullaImpact, setThullaImpact] = useState(false);
   const refresh = useCallback(async () => {
     try { setView(await fetchRoom({ data: { roomId } })); setError(""); }
     catch (cause) { setError(cause instanceof Error ? cause.message : "Could not refresh the table."); }
@@ -40,8 +41,14 @@ export function OnlineRoom({ roomId, onLeave }: { roomId: string; onLeave: () =>
     if (view?.game?.event?.type !== "thulla") return;
     setThullaBurst(true);
     sfx.thulla();
-    const timer = window.setTimeout(() => setThullaBurst(false), 1500);
-    return () => window.clearTimeout(timer);
+    const impactTimer = window.setTimeout(() => setThullaImpact(true), 680);
+    const settleTimer = window.setTimeout(() => setThullaImpact(false), 1250);
+    const finishTimer = window.setTimeout(() => setThullaBurst(false), 1450);
+    return () => {
+      window.clearTimeout(impactTimer);
+      window.clearTimeout(settleTimer);
+      window.clearTimeout(finishTimer);
+    };
   }, [view?.game?.eventSeq]);
 
   if (!view) return <div className="flex min-h-screen items-center justify-center bg-background font-display text-gold">Finding your seat…</div>;
@@ -60,14 +67,20 @@ export function OnlineRoom({ roomId, onLeave }: { roomId: string; onLeave: () =>
         <div className="text-center"><p className="font-display font-bold text-gold">IBRA.INC · BHABHI</p><p className="text-xs text-muted-foreground">Room {view.room.code} · Live table</p></div>
         <div className="text-xs text-muted-foreground">{myTurn ? "Your turn" : `${game.players[game.turn]?.name ?? "Player"}'s turn`}</div>
       </header>
-      <section className={cn("relative mx-auto aspect-[16/10] max-w-5xl overflow-hidden rounded-[3rem] border-[10px] border-table-rim bg-felt shadow-[inset_0_0_120px_oklch(0_0_0/0.55),0_30px_60px_oklch(0_0_0/0.6)]", thullaBurst && "animate-thulla-table")}>
-        {thullaBurst && <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center bg-destructive/25 animate-thulla-flash"><strong className="font-display text-5xl font-black text-destructive-foreground drop-shadow-2xl animate-thulla-slam md:text-8xl">THULLA!</strong></div>}
+      <section className={cn("relative mx-auto aspect-[16/10] max-w-5xl overflow-hidden rounded-[3rem] border-[10px] border-table-rim bg-felt shadow-[inset_0_0_120px_oklch(0_0_0/0.55),0_30px_60px_oklch(0_0_0/0.6)]", thullaImpact && "animate-thulla-impact")}>
+        {thullaBurst && game.event?.type === "thulla" && (
+          <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center">
+            <div className={cn("absolute inset-0 bg-destructive/25", thullaImpact && "animate-thulla-flash")} />
+            <div className="absolute thulla-airborne"><PlayingCard card={game.event.card} size="table" /></div>
+            <strong className="absolute top-[25%] font-display text-5xl font-black text-destructive-foreground drop-shadow-2xl animate-thulla-slam md:text-8xl">THULLA!</strong>
+          </div>
+        )}
         {game.players.map((player) => {
           const positions = ["bottom-4 left-1/2 -translate-x-1/2", "left-4 top-1/2 -translate-y-1/2", "top-4 left-1/2 -translate-x-1/2", "right-4 top-1/2 -translate-y-1/2"];
           return <div key={player.id} className={cn("absolute z-10 text-center", positions[player.id])}><div className={cn("mx-auto flex h-12 w-12 items-center justify-center rounded-full border-2 bg-background/70 font-display font-bold", game.turn === player.id ? "border-gold text-gold animate-pulse" : "border-foreground/30")}>{player.name[0]}</div><p className="mt-1 text-xs font-bold">{player.name}</p><p className="text-[10px] text-foreground/70">{player.hand.length} cards</p></div>;
         })}
         <div className="absolute left-1/2 top-1/2 flex h-[45%] w-[45%] -translate-x-1/2 -translate-y-1/2 items-center justify-center">
-          {game.trick.map((item, index) => <PlayingCard key={item.card.id} card={item.card} size="table" className="absolute" style={{ transform: `rotate(${index * 18 - 25}deg) translate(${(index - 1.5) * 18}px, ${(index % 2) * 14}px)` }} />)}
+          {game.trick.map((item, index) => <PlayingCard key={item.card.id} card={item.card} size="table" className={cn("absolute", thullaImpact && "animate-card-judder")} style={{ transform: `rotate(${index * 18 - 25}deg) translate(${(index - 1.5) * 18}px, ${(index % 2) * 14}px)` }} />)}
           {game.trick.length === 0 && <p className="rounded-full bg-background/35 px-4 py-2 font-display text-sm text-gold">{myTurn ? "Your turn" : "Waiting for the next card…"}</p>}
         </div>
       </section>
