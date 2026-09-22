@@ -215,6 +215,29 @@
   75% { transform: translate(calc((var(--thulla-i) - 3) * 5px), 5vh) rotate(calc(var(--thulla-i) * 12deg)); opacity: 1; }
   100% { transform: translate(0, 18vh) scale(0.5); opacity: 0; }
 }
+@keyframes thulla-airborne {
+  0% { transform: translate3d(0, -48vh, 0) rotateY(0deg) rotateZ(-22deg) scale(0.82); opacity: 0; filter: blur(2px); }
+  12% { opacity: 1; }
+  46% { transform: translate3d(0, -24vh, 0) rotateY(540deg) rotateZ(14deg) scale(1.12); filter: blur(0); }
+  72% { transform: translate3d(0, -5vh, 0) rotateY(900deg) rotateZ(-5deg) scale(1.04); }
+  78% { transform: translate3d(0, 0, 0) rotateY(900deg) rotateZ(0) scale(1.08, 0.86); }
+  86% { transform: translate3d(0, -14px, 0) rotateY(900deg) scale(0.98, 1.03); }
+  100% { transform: translate3d(0, 0, 0) rotateY(900deg) scale(1); opacity: 1; }
+}
+@keyframes thulla-impact {
+  0%, 100% { transform: translate(0); }
+  18% { transform: translate(-7px, 4px) rotate(-0.3deg); }
+  34% { transform: translate(8px, -3px) rotate(0.35deg); }
+  52% { transform: translate(-5px, 2px); }
+  70% { transform: translate(3px, -1px); }
+}
+@keyframes card-judder {
+  0%, 100% { transform: translate(0) rotate(0); }
+  20% { transform: translate(-9px, -4px) rotate(-4deg); }
+  38% { transform: translate(8px, 3px) rotate(3deg); }
+  58% { transform: translate(-5px, 1px) rotate(-2deg); }
+  78% { transform: translate(3px, -1px) rotate(1deg); }
+}
 @keyframes brand-reveal {
   0% { opacity: 0; transform: translateY(18px); }
   25%, 75% { opacity: 1; transform: translateY(0); }
@@ -251,6 +274,17 @@
 @utility animate-thulla-card {
   animation: thulla-card 1.65s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
 }
+@utility thulla-airborne {
+  transform-style: preserve-3d;
+  perspective: 900px;
+  animation: thulla-airborne 1.35s cubic-bezier(0.18, 0.72, 0.2, 1) both;
+}
+@utility animate-thulla-impact {
+  animation: thulla-impact 0.55s ease-out;
+}
+@utility animate-card-judder {
+  animation: card-judder 0.5s ease-out;
+}
 @utility animate-brand-reveal {
   animation: brand-reveal 2.2s ease-in-out forwards;
 }
@@ -261,6 +295,6 @@
   animation: brand-line 0.8s 0.45s ease-out both;
 }
 @media (prefers-reduced-motion: reduce) {
-  .animate-thulla-table, .animate-thulla-flash, .animate-thulla-slam, .animate-thulla-card { animation-duration: 0.01ms; }
+  .animate-thulla-table, .animate-thulla-flash, .animate-thulla-slam, .animate-thulla-card, .thulla-airborne, .animate-thulla-impact, .animate-card-judder { animation-duration: 0.01ms; }
   .animate-brand-reveal, .animate-brand-mark, .animate-brand-line { animation-duration: 0.01ms; animation-delay: 0ms; }
 }
