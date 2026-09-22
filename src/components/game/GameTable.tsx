@@ -18,6 +18,7 @@ export function GameTable({ onGameOver }: { onGameOver?: () => void } = {}) {
   const reportedOver = useRef(false);
   const [autoPlay, setAutoPlay] = useState(false);
   const [sound, setSound] = useState(true);
+  const [chatEnabled, setChatEnabled] = useState(true);
   const [speed, setSpeed] = useState<Speed>("normal");
   const [banner, setBanner] = useState<{ text: string; tone: "thulla" | "good" | "neutral" } | null>(null);
   const [thullaBurst, setThullaBurst] = useState<{ picker: string; count: number } | null>(null);
@@ -26,7 +27,7 @@ export function GameTable({ onGameOver }: { onGameOver?: () => void } = {}) {
   const lastSeq = useRef(0);
   const stateRef = useRef(state);
   stateRef.current = state;
-  const { reactions, chat, bubbles, humanSay, humanReact } = useSocial(state, sound);
+  const { reactions, chat, bubbles, humanSay, humanReact } = useSocial(state, sound, chatEnabled);
 
   const delay = autoPlay ? Math.min(SPEED_MS[speed], 300) : SPEED_MS[speed];
   const human = state.players[0]!;
@@ -324,8 +325,8 @@ export function GameTable({ onGameOver }: { onGameOver?: () => void } = {}) {
 
         {/* Reactions + chat */}
         <div className="mt-4 flex w-full max-w-5xl items-start gap-3">
-          <div className="min-w-0 flex-1"><ChatPanel chat={chat} names={state.players.map((p) => p.name)} onSend={humanSay} /></div>
-          <StickerDrawer onPick={humanReact} />
+          <div className="min-w-0 flex-1"><ChatPanel chat={chat} names={state.players.map((p) => p.name)} onSend={humanSay} enabled={chatEnabled} onToggle={() => setChatEnabled((value) => !value)} /></div>
+          <StickerDrawer onPick={humanReact} disabled={!chatEnabled} />
         </div>
 
         <details className="mt-3 w-full max-w-5xl text-xs text-muted-foreground">

@@ -60,7 +60,7 @@ export interface ChatMsg { id: number; player: number; text: string; time: numbe
 
 let seq = 1;
 
-export function useSocial(state: GameState, sound: boolean) {
+export function useSocial(state: GameState, sound: boolean, enabled = true) {
   const [reactions, setReactions] = useState<Reaction[]>([]);
   const [chat, setChat] = useState<ChatMsg[]>([]);
   const [bubbles, setBubbles] = useState<Record<number, ChatMsg | undefined>>({});
@@ -77,20 +77,29 @@ export function useSocial(state: GameState, sound: boolean) {
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
 
   const react = useCallback((player: number, sticker: Sticker, target?: number) => {
+    if (!enabled) return;
     const id = seq++;
     setReactions((r) => [...r, { id, player, emoji: sticker.emoji, kind: sticker.kind, target }]);
     if (soundRef.current) (sticker.kind === "toss" ? sfx.toss : sfx.pop)();
     later(() => setReactions((r) => r.filter((x) => x.id !== id)), sticker.kind === "pop" ? 2200 : 2600);
-  }, [later]);
+  }, [enabled, later]);
 
   const say = useCallback((player: number, text: string) => {
+    if (!enabled) return;
     const msg: ChatMsg = { id: seq++, player, text: text.trim().slice(0, 120), time: Date.now() };
     if (!msg.text) return;
     setChat((c) => [...c.slice(-99), msg]);
     setBubbles((b) => ({ ...b, [player]: msg }));
     if (soundRef.current) sfx.chat();
     later(() => setBubbles((b) => (b[player]?.id === msg.id ? { ...b, [player]: undefined } : b)), 3500);
-  }, [later]);
+  }, [enabled, later]);
+
+  useEffect(() => {
+    if (!enabled) {
+      setReactions([]);
+      setBubbles({});
+    }
+  }, [enabled]);
 
   // Human sends a message → bots may reply
   const humanSay = useCallback((text: string) => {
@@ -277,7 +286,7 @@ export function StickerDrawer({ onPick, disabled }: { onPick: (s: Sticker) => vo
   );
 }
 
-export function ChatPanel({ chat, names, onSend }: { chat: ChatMsg[]; names: string[]; onSend: (t: string) => void }) {
+export function ChatPanel({ chat, names, onSend, enabled, onToggle }: { chat: ChatMsg[]; names: string[]; onSend: (t: string) => void; enabled: boolean; onToggle: () => void }) {
   const [open, setOpen] = useState(true);
   const [text, setText] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
@@ -292,16 +301,15 @@ export function ChatPanel({ chat, names, onSend }: { chat: ChatMsg[]; names: str
 
   return (
     <section className="flex flex-col rounded-2xl border border-gold/15 bg-card/60 text-sm" aria-label="Table chat">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        className="flex items-center justify-between px-4 py-3 font-display text-xs uppercase tracking-[0.25em] text-gold/80"
-      >
-        <span>Banter {chat.length > 0 && <span className="ml-1 rounded-full bg-gold/20 px-1.5 py-0.5 text-[10px] tracking-normal">{chat.length}</span>}</span>
-        <span aria-hidden>{open ? "▾" : "▸"}</span>
-      </button>
-      {open && (
+      <div className="flex items-center justify-between px-4 py-3">
+        <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="font-display text-xs uppercase tracking-[0.25em] text-gold/80">
+          Banter {enabled && chat.length > 0 && <span className="ml-1 rounded-full bg-gold/20 px-1.5 py-0.5 text-[10px] tracking-normal">{chat.length}</span>} <span aria-hidden>{open ? "▾" : "▸"}</span>
+        </button>
+        <button type="button" onClick={onToggle} className={cn("rounded-full border px-2.5 py-1 text-xs font-semibold", enabled ? "border-gold/30 text-gold" : "border-border text-muted-foreground")} aria-pressed={!enabled}>
+          {enabled ? "Chat on" : "Chat off"}
+        </button>
+      </div>
+      {open && enabled && (
         <div className="flex flex-col gap-2 px-4 pb-4">
           <div className="h-32 space-y-1 overflow-y-auto rounded-xl bg-black/20 p-2">
             {chat.length === 0 && <p className="text-muted-foreground">Say something to the table…</p>}
@@ -339,6 +347,7 @@ export function ChatPanel({ chat, names, onSend }: { chat: ChatMsg[]; names: str
           </form>
         </div>
       )}
+      {open && !enabled && <p className="px-4 pb-4 text-sm text-muted-foreground">Chat and reactions are muted.</p>}
     </section>
   );
 }
